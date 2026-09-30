@@ -1,0 +1,36 @@
+# --- Core（A 线必须，定稿第三十二节） ---
+fastapi>=0.110,<1.0          # Phase 8：app/api/（路由 / OpenAPI / 异常映射）
+uvicorn>=0.27,<1.0           # Phase 8：scripts/serve.py 真起 HTTP 服务
+pydantic>=2.7,<3.0
+pydantic-settings>=2.2,<3.0
+SQLAlchemy[asyncio]>=2.0.30,<3.0
+aiosqlite>=0.20
+httpx>=0.27
+PyYAML>=6.0
+
+# --- 测试 ---
+pytest>=8.0
+pytest-asyncio>=0.24
+# coverage：实测行覆盖用（scripts/check_coverage.py 有 90% 下限守卫）。
+# 不是 A 线的前置依赖 —— 不装的话那条守卫会自己跳过。
+coverage>=7.4
+
+# playwright：只为「真实浏览器端到端测试」存在（KNOWLEDGEFLOW_BROWSER_TEST=1）。
+# 不跑那条测试就不用装；requirements.lock 里有精确版本。
+# playwright>=1.40
+
+# --- Phase 7：可选能力（ASR / OCR） ---
+# 定稿第二条原则要求「不因为 ASR/OCR 环境问题阻塞 Core Pipeline」，
+# 所以这些**不是** A 线的前置依赖 —— 代码里全是懒加载，没装就自动降级。
+# 装了才能真实转写；不装时 `is_available()` 返回 False，A 线照跑。
+#
+# av 必须 <19：faster-whisper 调用 `av.open(..., metadata_errors=...)`，
+# 而 PyAV 19 删掉了这个关键字参数（faster-whisper 只声明 `av>=11`，没有上限）。
+# 实测：av 19.0.0 直接 TypeError，18.1.0 正常。
+faster-whisper>=1.0,<2.0
+av>=11,<19
+
+# OCR：除了 Python 包，还需要**系统二进制** —— macOS 上 `brew install tesseract`。
+# 注意 brew 的 tesseract 只带 eng/osd 语言包，中文识别还要 `brew install tesseract-lang`。
+pytesseract>=0.3,<1.0
+pillow>=10,<12.4

@@ -1,0 +1,176 @@
+/* KnowledgeFlow Chrome 扩展 —— 零构建原生 CSS（与 app/web 同一套令牌思路）。 */
+
+:root {
+  --bg: #ffffff;
+  --text: #1f2328;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --chip: #f3f4f6;
+  --accent: #2f6feb;
+  --ok: #1a7f4b;
+  --bad: #b3261e;
+  --warn: #9a6a00;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 360px;
+  margin: 0;
+  padding: .8rem .9rem 1rem;
+  font: 13px/1.6 -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .6rem;
+}
+
+h1 { margin: 0; font-size: .95rem; }
+
+.chip {
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--muted);
+  font-size: .72rem;
+  white-space: nowrap;
+}
+.chip.ok { background: rgba(26,127,75,.12); color: var(--ok); }
+.chip.bad { background: rgba(179,38,30,.12); color: var(--bad); }
+
+.page {
+  padding: .55rem .6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: .7rem;
+}
+
+.page-title {
+  font-size: .85rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page-url {
+  margin-top: .15rem;
+  font-size: .72rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verdict {
+  margin-top: .4rem;
+  font-size: .78rem;
+  color: var(--muted);
+}
+.verdict.ok { color: var(--ok); }
+.verdict.bad { color: var(--bad); }
+
+.paste {
+  display: block;
+  margin: .6rem 0 0;
+  font-size: .72rem;
+  color: var(--muted);
+}
+.paste input {
+  width: 100%;
+  margin-top: .25rem;
+  padding: .4rem .5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: .78rem;
+  color: var(--text);
+}
+
+.actions { display: flex; }
+
+button {
+  flex: 1;
+  padding: .5rem .8rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+}
+button:disabled { opacity: .45; cursor: default; }
+
+.result {
+  margin-top: .8rem;
+  padding-top: .7rem;
+  border-top: 1px dashed var(--border);
+  font-size: .78rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: .1rem .5rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.badge.completed { background: rgba(26,127,75,.14); color: var(--ok); }
+.badge.duplicate { background: rgba(154,106,0,.14); color: var(--warn); }
+.badge.failed { background: rgba(179,38,30,.14); color: var(--bad); }
+
+dl.kv {
+  margin: .5rem 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .1rem .6rem;
+}
+dl.kv dt { color: var(--muted); }
+dl.kv dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error-box {
+  margin-top: .4rem;
+  padding: .4rem .5rem;
+  border-radius: 6px;
+  background: rgba(179,38,30,.1);
+  color: var(--bad);
+  word-break: break-all;
+}
+
+.settings {
+  margin-top: .9rem;
+  border-top: 1px solid var(--border);
+  padding-top: .6rem;
+  font-size: .78rem;
+  color: var(--muted);
+}
+.settings summary { cursor: pointer; }
+.settings input {
+  width: 100%;
+  margin-top: .4rem;
+  padding: .35rem .45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: .78rem;
+  color: var(--text);
+}
+.settings code {
+  background: var(--chip);
+  padding: .05rem .25rem;
+  border-radius: 4px;
+}
+.hint { margin-top: .35rem; line-height: 1.7; }
+
+.hidden { display: none; }

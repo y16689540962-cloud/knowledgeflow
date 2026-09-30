@@ -1,0 +1,66 @@
+# requirements.lock —— 本机实测通过的**完整**依赖快照（含传递依赖）。
+#
+# 用途：复现「我这边跑得动」的那个版本组合。
+# 用法：pip install -r requirements.lock
+#
+# 与 requirements.txt 的分工：
+#   * requirements.txt  —— 只声明**直接**依赖 + 允许范围，给人看、给 CI 做宽松安装。
+#   * requirements.lock —— pip freeze 出来的**精确**版本，给「装出来必须一模一样」的场景。
+#
+# 为什么需要它：范围钉版挡不住传递依赖的破坏性升级。
+# Q6 的坑就是这么来的 —— faster-whisper 只声明 `av>=11` 没有上限，pip 装到 av 19.0.0，
+# 而它调用 `av.open(..., metadata_errors=...)`，该参数在 PyAV 19 被删，直接 TypeError。
+# 现在这里钉着 av==18.1.0（实测正常）。
+#
+# 重新生成（在本机 venv 里跑通全量测试之后）：
+#   ../.venv/bin/python -m pip freeze --exclude-editable > requirements.lock
+#
+# 注意：playwright 只为「真实浏览器端到端测试」存在（KNOWLEDGEFLOW_BROWSER_TEST=1），
+# 不跑那条测试的话装不装都行。
+
+aiosqlite==0.22.1
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+av==18.1.0
+certifi==2026.7.22
+click==8.5.0
+coverage==7.16.2
+ctranslate2==4.8.2
+fastapi==0.141.1
+faster-whisper==1.2.1
+filelock==4.0.6
+flatbuffers==25.12.19
+fsspec==2026.9.0
+greenlet==3.5.6
+h11==0.16.0
+hf-xet==1.6.0
+httpcore==1.0.9
+httpx==0.28.1
+huggingface_hub==1.33.0
+idna==3.20
+iniconfig==2.3.0
+numpy==2.5.3
+onnxruntime==1.30.0
+packaging==26.3
+pillow==12.3.0
+playwright==1.63.0
+pluggy==1.6.0
+protobuf==7.36.2
+pydantic==2.13.5
+pydantic-settings==2.15.0
+pydantic_core==2.46.5
+pyee==13.0.1
+Pygments==2.21.0
+pytesseract==0.3.13
+pytest==9.1.1
+pytest-asyncio==1.4.0
+python-dotenv==1.2.3
+PyYAML==6.0.3
+SQLAlchemy==2.1.1
+starlette==1.7.0
+tokenizers==0.23.2
+tqdm==4.70.1
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+uvicorn==0.54.0

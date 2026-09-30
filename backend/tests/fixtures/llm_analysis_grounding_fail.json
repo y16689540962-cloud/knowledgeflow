@@ -1,0 +1,85 @@
+{
+  "title": "人口下降之后，房子还会涨吗",
+  "summary": "这份 fixture 本身能通过 Pydantic 校验，但包含原文中不存在的机构、年份与数字，应被 Grounding Check 拦截。",
+  "analysis_type": "mixed",
+  "claims": [
+    {
+      "text": "国际货币基金组织在 2035 年预测中国人口将降至 9.2 亿。",
+      "type": "fact",
+      "author_position": null,
+      "time_horizon": "2035 年",
+      "based_on_claims": [],
+      "evidence": [
+        {
+          "type": "reference",
+          "description": "原文并未提及该机构，也没有出现 2035 年与 9.2 亿这两个数字。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.95,
+      "needs_verification": false
+    },
+    {
+      "text": "中国人口正在下降。",
+      "type": "fact",
+      "author_position": null,
+      "time_horizon": null,
+      "based_on_claims": [],
+      "evidence": [
+        {
+          "type": "source",
+          "description": "原文以公开统计数据作为依据。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.9,
+      "needs_verification": false
+    },
+    {
+      "text": "作者预测房地产未来上涨。",
+      "type": "prediction",
+      "author_position": "看多房地产",
+      "time_horizon": "未来",
+      "based_on_claims": [],
+      "evidence": [
+        {
+          "type": "none",
+          "description": "对未来的预测，无法用现有数据验证。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.4,
+      "needs_verification": false
+    },
+    {
+      "text": "世界银行在 2040 年发布的报告得出了完全相反的结论。",
+      "type": "fact",
+      "author_position": null,
+      "time_horizon": "2040 年",
+      "based_on_claims": [],
+      "evidence": [
+        {
+          "type": "reference",
+          "description": "原文未提及世界银行，也没有 2040 年这个年份。这条 claim 的实体在原文中全部找不到，用于验证 R2.1。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.9,
+      "needs_verification": false
+    }
+  ],
+  "questions": [],
+  "topics": ["人口结构", "房地产"],
+  "entities": [
+    { "name": "国际货币基金组织", "type": "organization" },
+    { "name": "世界银行", "type": "organization" },
+    { "name": "中国", "type": "place" },
+    { "name": "房地产", "type": "concept" }
+  ],
+  "keywords": ["人口下降", "房价"],
+  "overall_confidence": 0.8
+}

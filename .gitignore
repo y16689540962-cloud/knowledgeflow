@@ -1,0 +1,26 @@
+# --- Python ---
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest_tmp/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# --- 本地数据与凭据（绝不提交） ---
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.sqlite3
+
+# --- 生成的产物 ---
+openapi.json
+
+# --- 编辑器 / 系统 ---
+.vscode/
+.idea/
+.DS_Store

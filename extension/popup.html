@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>KnowledgeFlow</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+<header>
+  <h1>KnowledgeFlow</h1>
+  <span id="status" class="chip">检查服务…</span>
+</header>
+
+<section class="page">
+  <div id="page-title" class="page-title">—</div>
+  <div id="page-url" class="page-url">—</div>
+  <div id="verdict" class="verdict">—</div>
+</section>
+
+<div class="actions">
+  <button id="btn-clip" type="button" disabled>采集并写入 Obsidian</button>
+</div>
+
+<label class="paste">
+  或者直接粘贴抖音分享文案 / 链接
+  <input id="paste-url" type="text" spellcheck="false" placeholder="留空则用当前页">
+</label>
+
+<div id="result" class="result hidden"></div>
+
+<details class="settings">
+  <summary>服务地址</summary>
+  <label>
+    <input id="api-base" type="text" spellcheck="false">
+  </label>
+  <div class="hint">
+    默认 <code>http://127.0.0.1:8000</code>。改端口要同时改 <code>manifest.json</code>
+    的 <code>host_permissions</code>，否则浏览器会拦掉请求。
+  </div>
+</details>
+
+<script src="urlmatch.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
