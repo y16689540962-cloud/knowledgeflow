@@ -1,0 +1,14 @@
+[project]
+name = "knowledgeflow-backend"
+version = "0.3.3"
+description = "KnowledgeFlow - 互联网碎片信息 → 结构化知识资产 → Obsidian"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# 固定 basetemp：每次运行先整体清空再重建，避免把几百个临时目录堆在系统 temp 里，
+# 也避免某些受限环境对「已存在的 basetemp 目录再 mkdir(exist_ok=True)」报 EEXIST。
+# 相对路径以运行 pytest 时的工作目录为基准（即 backend/）。
+addopts = "-q --basetemp=.pytest_tmp"

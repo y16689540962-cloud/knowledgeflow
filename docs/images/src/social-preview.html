@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<!-- GitHub「Social preview」用图（1280×640）。发到微信/飞书/X 时的分享卡片就是它。 -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 640px; overflow: hidden;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+    color: #F4F1FA;
+    background: radial-gradient(900px 520px at 18% 16%, #2C2249 0%, #16121F 55%, #0C0A12 100%);
+    position: relative;
+  }
+  /* 右上角一团紫光，和扩展图标同一套色 */
+  body::after {
+    content: ""; position: absolute; right: -140px; top: -160px;
+    width: 620px; height: 620px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,.42) 0%, rgba(139,92,246,0) 68%);
+  }
+  .wrap { position: relative; z-index: 1; padding: 74px 78px; height: 100%; display: flex; flex-direction: column; }
+
+  .brand { display: flex; align-items: center; gap: 20px; }
+  .brand svg { width: 88px; height: 88px; }
+  .brand h1 { font-size: 54px; font-weight: 600; letter-spacing: -.5px; }
+
+  .pitch { margin-top: 34px; font-size: 31px; line-height: 1.5; color: #CFC7E4; font-weight: 400; }
+  .pitch b { color: #C4B5FD; font-weight: 600; }
+
+  .stats { margin-top: auto; margin-bottom: 34px; display: flex; gap: 14px; }
+  .stat {
+    padding: 13px 22px; border-radius: 12px; font-size: 20px;
+    background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.10);
+    color: #E4DEF4;
+  }
+  .stat b { color: #A78BFA; font-weight: 600; }
+
+  .flow {
+    position: absolute; left: 78px; right: 78px; bottom: 30px;
+    font-size: 18px; color: #6E6685; letter-spacing: .3px;
+  }
+
+  /* 中间：主链路的流程链，用来把版面撑起来（顺便说明架构） */
+  .chain { margin-top: 42px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .node {
+    padding: 9px 18px; border-radius: 10px; font-size: 19px;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+    color: #CFC7E4;
+  }
+  .node.hl { background: rgba(139,92,246,.20); border-color: rgba(167,139,250,.45); color: #DDD3FB; }
+  .sep { color: #4E4763; font-size: 17px; }
+  .chain-note { margin-top: 18px; font-size: 18px; color: #7C7593; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#241C3C"/><stop offset="1" stop-color="#110E1C"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="0.5" cy="0.44" r="0.62">
+          <stop offset="0" stop-color="#8B5CF6" stop-opacity="0.5"/>
+          <stop offset="1" stop-color="#8B5CF6" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect x="16" y="16" width="480" height="480" rx="116" fill="url(#bg)"/>
+      <ellipse cx="256" cy="236" rx="196" ry="176" fill="url(#glow)"/>
+      <polygon points="128,168 384,168 430,248 256,448 82,248" fill="#7C3AED"/>
+      <polygon points="170,168 342,168 306,248 206,248" fill="#A78BFA"/>
+      <polygon points="128,168 170,168 206,248 82,248" fill="#8B5CF6"/>
+      <polygon points="384,168 342,168 306,248 430,248" fill="#6D28D9"/>
+      <polygon points="82,248 206,248 256,448" fill="#5B21B6"/>
+      <polygon points="206,248 306,248 256,448" fill="#7C3AED"/>
+      <polygon points="306,248 430,248 256,448" fill="#4C1D95"/>
+      <polygon points="178,180 238,180 210,238 170,238" fill="#FFFFFF" opacity="0.16"/>
+    </svg>
+    <h1>KnowledgeFlow</h1>
+  </div>
+
+  <div class="pitch">
+    把一条抖音，变成一份<br>
+    <b>能检索、有出处、分得清事实与观点</b>的 Obsidian 笔记
+  </div>
+
+  <div class="chain">
+    <span class="node">RawContent</span><span class="sep">→</span>
+    <span class="node">归一化</span><span class="sep">→</span>
+    <span class="node">去重</span><span class="sep">→</span>
+    <span class="node">LLM 分析</span><span class="sep">→</span>
+    <span class="node hl">Grounding 核查</span><span class="sep">→</span>
+    <span class="node">Markdown</span><span class="sep">→</span>
+    <span class="node">Obsidian</span>
+  </div>
+  <div class="chain-note">「这句话能不能在原文里找到出处」由确定性规则判定，模型自报一律被覆盖</div>
+
+  <div class="stats">
+    <div class="stat"><b>13</b> 个固定章节</div>
+    <div class="stat"><b>97%</b> 行覆盖率</div>
+    <div class="stat"><b>1460</b> 项测试</div>
+    <div class="stat">抖音一键剪藏</div>
+  </div>
+
+  <div class="flow">抖音一键剪藏 ｜ Chrome 扩展 ｜ FastAPI ｜ 本地优先，无遥测</div>
+</div>
+</body>
+</html>

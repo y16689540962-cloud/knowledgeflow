@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KnowledgeFlow</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>KnowledgeFlow</h1>
+  <div class="sub">碎片信息 → 结构化知识资产 → Obsidian</div>
+  <div id="health" class="health">载入中…</div>
+</header>
+
+<main>
+  <!-- 处理 -->
+  <section class="panel">
+    <h2>处理一条内容</h2>
+    <form id="ingest-form">
+      <div class="modes" id="modes">
+        <button type="button" id="mode-manual" class="mode active" aria-pressed="true">手动粘贴</button>
+        <button type="button" id="mode-douyin" class="mode" aria-pressed="false">抖音链接</button>
+      </div>
+
+      <div id="pane-manual">
+        <div class="grid">
+          <label>标题<input id="f-title" type="text" placeholder="可留空"></label>
+          <label>作者<input id="f-author" type="text" placeholder="可留空"></label>
+        </div>
+        <label>来源 URL<input id="f-url" type="text" placeholder="可留空（不参与去重）"></label>
+        <label>正文
+          <textarea id="f-text" rows="7" placeholder="粘贴一段正文…"></textarea>
+        </label>
+      </div>
+
+      <div id="pane-douyin" class="hidden">
+        <label>抖音分享链接 / 分享文案
+          <input id="f-douyin" type="text" placeholder="https://v.douyin.com/xxxxxxx/ 或 https://www.douyin.com/video/...">
+        </label>
+        <p class="hint">
+          直接把抖音「复制链接」给的整段文案粘进来就行（系统会自动抠出里面的链接）；
+          也可以只粘那一段链接。同一条视频重复粘不会重复处理（按 source_id 判重）。<br>
+          元数据取自抖音详情接口，需要服务端已配置 <code>DOUYIN_COOKIE</code>；
+          只做公开数据的 GET，不绕验证码、不伪造签名。
+        </p>
+      </div>
+
+      <div class="actions">
+        <button id="btn-submit" type="submit">处理并写入 Obsidian</button>
+        <button id="btn-sample" type="button">填入示例</button>
+      </div>
+    </form>
+    <div id="result" class="result hidden"></div>
+  </section>
+
+  <!-- 内容库 -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>内容库</h2>
+      <div class="filters">
+        <select id="f-status">
+          <option value="">全部状态</option>
+          <option value="completed">completed</option>
+          <option value="failed">failed</option>
+          <option value="processing">processing</option>
+          <option value="pending">pending</option>
+        </select>
+        <button id="btn-refresh" type="button">刷新</button>
+      </div>
+    </div>
+    <div id="list" class="list"></div>
+    <div id="detail" class="detail hidden"></div>
+  </section>
+</main>
+
+<footer>
+  接口文档 <a href="/docs" target="_blank" rel="noreferrer">/docs</a>
+  · OpenAPI <a href="/openapi.json" target="_blank" rel="noreferrer">/openapi.json</a>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

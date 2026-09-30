@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      # 装的是 README 里那一条命令，不另建一套「CI 专用依赖」——
+      # 否则 CI 绿不代表用户照文档做能得到同样的结果。
+      # ASR / OCR 引擎在 runner 上不会自动降级成失败：代码是懒加载 + 明确降级，
+      # 对应的真实引擎测试默认 skip。
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest
+
+      - name: Doc consistency guard
+        run: python scripts/check_doc_consistency.py --skip-tests
+
+      - name: Coverage guard (>= 90%)
+        run: python scripts/check_coverage.py

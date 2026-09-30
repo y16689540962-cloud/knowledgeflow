@@ -1,0 +1,14 @@
+{
+  "source": "douyin",
+  "source_id": "7321567890123456789",
+  "source_url": "https://www.douyin.com/video/7321567890123456789",
+  "title": "三分钟讲清楚 AI Agent 到底是什么",
+  "author": "老张说AI",
+  "author_id": "MS4wLjABAAAAkExampleAuthorId01",
+  "description": "用最朴素的语言解释 Agent、Workflow 和 Chatbot 的区别。",
+  "media_type": "video",
+  "media_path": null,
+  "raw_text": "很多人把 Agent 当成更聪明的聊天机器人，其实不是。聊天机器人是你问一句它答一句；Agent 是你给一个目标，它自己拆步骤、自己调工具、自己检查结果。",
+  "transcript": "大家好，今天用三分钟讲清楚 AI Agent 到底是什么。先说结论：Agent 不是更聪明的 Chatbot，它是一个能自己拆解目标、调用工具、并根据结果反复修正的执行体。第一，Chatbot 的交互是单轮的，你问一句它答一句。第二，Workflow 是人工把步骤写死，模型只负责其中某一步。第三，Agent 会自己决定下一步做什么，它会调搜索、调数据库、跑代码，然后看结果好不好，不好就重来。2023 年之后，主流框架都在做这件事，但真正落地到企业里，成功率大概只有 30% 左右，剩下 70% 卡在数据权限和评测上。所以我的建议是：先做好 Workflow，再考虑 Agent。",
+  "ocr_text": "AI Agent 到底是什么？"
+}

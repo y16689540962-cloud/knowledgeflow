@@ -1,0 +1,46 @@
+{
+  "title": "人口下降之后，房子还会涨吗",
+  "summary": "这份 fixture 故意同时包含「缺字段」与「类型错误」，用于验证 Pydantic 校验会拒绝它。",
+  "claims": [
+    {
+      "type": "fact",
+      "author_position": null,
+      "time_horizon": null,
+      "based_on_claims": [],
+      "evidence": [
+        {
+          "type": "source",
+          "description": "原文以公开统计数据作为依据。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.9,
+      "needs_verification": false
+    },
+    {
+      "text": "作者认为房地产未来会上涨。",
+      "type": "opinion",
+      "author_position": "主张房价上涨",
+      "time_horizon": "未来",
+      "based_on_claims": [],
+      "evidence": [
+        {
+          "type": "none",
+          "description": "作者的主观判断。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": "high",
+      "needs_verification": false
+    }
+  ],
+  "questions": [],
+  "topics": ["房地产"],
+  "entities": [
+    { "name": "房地产", "type": "concept" }
+  ],
+  "keywords": ["房价"],
+  "overall_confidence": "very high"
+}

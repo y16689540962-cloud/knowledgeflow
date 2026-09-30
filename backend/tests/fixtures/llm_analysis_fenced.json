@@ -1,0 +1,124 @@
+```json
+{
+  "title": "人口下降之后，房子还会涨吗",
+  "summary": "作者以出生人口下降为事实前提，推断房地产需求将走弱，并进一步预测房价上涨，同时给出自己对一线城市房产的持有情况。",
+  "analysis_type": "mixed",
+  "claims": [
+    {
+      "text": "中国人口正在下降。",
+      "type": "fact",
+      "author_position": null,
+      "time_horizon": null,
+      "based_on_claims": [],
+      "evidence": [
+        {
+          "type": "source",
+          "description": "原文以「公开的统计数据」作为人口下降的依据，并给出出生人口变化区间。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.9,
+      "needs_verification": false
+    },
+    {
+      "text": "过去十年，中国出生人口从每年 1600 万降到不足 1000 万。",
+      "type": "fact",
+      "author_position": null,
+      "time_horizon": "过去十年",
+      "based_on_claims": [],
+      "evidence": [
+        {
+          "type": "data",
+          "description": "原文直接给出的出生人口区间数字：1600 万降到不足 1000 万。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.85,
+      "needs_verification": false
+    },
+    {
+      "text": "作者本人目前持有两套一线城市的房产。",
+      "type": "fact",
+      "author_position": null,
+      "time_horizon": null,
+      "based_on_claims": [],
+      "evidence": [
+        {
+          "type": "quote",
+          "description": "原文自述：作者本人目前持有两套一线城市的房产。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.8,
+      "needs_verification": false
+    },
+    {
+      "text": "作者认为房地产未来会上涨。",
+      "type": "opinion",
+      "author_position": "主张房价上涨",
+      "time_horizon": "未来",
+      "based_on_claims": ["中国人口正在下降。"],
+      "evidence": [
+        {
+          "type": "none",
+          "description": "作者的主观判断，原文未给出支撑上涨的证据。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.6,
+      "needs_verification": false
+    },
+    {
+      "text": "作者将人口变化与房地产价格联系起来。",
+      "type": "inference",
+      "author_position": "以人口下降推导房地产需求变化",
+      "time_horizon": null,
+      "based_on_claims": ["中国人口正在下降。"],
+      "evidence": [
+        {
+          "type": "none",
+          "description": "作者自己的推理链条，没有外部来源。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.5,
+      "needs_verification": false
+    },
+    {
+      "text": "作者预测房地产未来上涨。",
+      "type": "prediction",
+      "author_position": "看多房地产",
+      "time_horizon": "未来",
+      "based_on_claims": ["作者认为房地产未来会上涨。"],
+      "evidence": [
+        {
+          "type": "none",
+          "description": "对未来的预测，无法用现有数据验证。",
+          "source_url": null,
+          "timestamp": null
+        }
+      ],
+      "confidence": 0.4,
+      "needs_verification": false
+    }
+  ],
+  "questions": [
+    "出生人口下降是否必然导致核心城市房价下跌？",
+    "一线城市房产的稀缺性还能维持多久？"
+  ],
+  "topics": ["人口结构", "房地产", "宏观经济"],
+  "entities": [
+    { "name": "中国", "type": "place" },
+    { "name": "房地产", "type": "concept" },
+    { "name": "人口", "type": "concept" },
+    { "name": "一线城市", "type": "place" }
+  ],
+  "keywords": ["人口下降", "出生人口", "房价", "一线城市", "房地产"],
+  "overall_confidence": 0.72
+}
+```

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- KnowledgeFlow 扩展图标：紫水晶切面，意象致敬 Obsidian（非官方 logo，见 README 免责）。
+       PNG 由本文件渲染生成（1024px 出图后缩到 128/48/16），改设计请改这里。 -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#241C3C"/>
+      <stop offset="1" stop-color="#110E1C"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.44" r="0.62">
+      <stop offset="0" stop-color="#8B5CF6" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#8B5CF6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 底板（留 16px 透明边，Chrome 自己会做圆角遮罩） -->
+  <rect x="16" y="16" width="480" height="480" rx="116" fill="url(#bg)"/>
+  <ellipse cx="256" cy="236" rx="196" ry="176" fill="url(#glow)"/>
+
+  <!-- 宝石：冠部 + 亭部，7 个切面 -->
+  <polygon points="128,168 384,168 430,248 256,448 82,248" fill="#7C3AED"/>
+  <polygon points="170,168 342,168 306,248 206,248" fill="#A78BFA"/>
+  <polygon points="128,168 170,168 206,248 82,248"   fill="#8B5CF6"/>
+  <polygon points="384,168 342,168 306,248 430,248"  fill="#6D28D9"/>
+  <polygon points="82,248 206,248 256,448"           fill="#5B21B6"/>
+  <polygon points="206,248 306,248 256,448"          fill="#7C3AED"/>
+  <polygon points="306,248 430,248 256,448"          fill="#4C1D95"/>
+
+  <!-- 高光 -->
+  <polygon points="178,180 238,180 210,238 170,238" fill="#FFFFFF" opacity="0.16"/>
+</svg>
