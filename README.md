@@ -4,6 +4,7 @@
 ![coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
+![platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon-black)
 
 ![别让模型替你做判断](docs/images/pipeline.png)
 
@@ -24,6 +25,92 @@ Obsidian 笔记：摘要 / 核心观点（分事实·观点·推论·预测）/ 
 > summary. An LLM pipeline with rule-based grounding checks, deterministic dedup,
 > and a Chrome extension. Docs are in Chinese; code and tests read either way.
 > **For personal / research use only.**
+
+---
+
+## macOS Apple Silicon（v0.4 一键安装版）
+
+> KnowledgeFlow currently provides a native installation package for Apple Silicon Macs.
+>
+> Requirements: macOS 12+ · Apple Silicon · Obsidian · an LLM API key.
+
+**不用装 Python、不用开终端、不用配环境变量。** 下载 DMG → 拖进 Applications → 双击 →
+向导问三件事（Vault / AI Key / 模型）→ 服务起来、浏览器自动打开。
+
+### Installation
+
+1. Download `KnowledgeFlow-macOS-arm64.dmg`（见 [Releases](../../releases)）
+2. Open the DMG
+3. Drag **KnowledgeFlow** to Applications
+4. Launch KnowledgeFlow
+5. Complete the first-run setup wizard
+
+首次打开可能提示「无法验证开发者」—— 因为这一版只做了 ad-hoc 签名，**没有** Apple
+Developer ID 与公证（notarization）。**不要为此关闭系统安全功能**，正确做法是：
+
+- 在「应用程序」里 **右键 KnowledgeFlow → 打开** → 再点一次「打开」；
+  放行一次之后，之后双击就正常了。
+
+这一步是 macOS 对未公证应用的标准流程，不是这个应用在要求你降低安全设置。
+
+### 它把东西放在哪
+
+| 内容 | 位置 |
+|---|---|
+| 程序本体 | `/Applications/KnowledgeFlow.app`（整个运行环境自包含，269 MB） |
+| 你的配置（含 API Key，权限 `0600`） | `~/Library/Application Support/KnowledgeFlow/config/settings.json` |
+| 数据库 | `~/Library/Application Support/KnowledgeFlow/data/knowledgeflow.db` |
+| 日志 | `~/Library/Application Support/KnowledgeFlow/logs/`（`app.log` / `launcher.log`） |
+| 模型缓存 | `~/Library/Application Support/KnowledgeFlow/cache/` |
+
+**用户数据绝不写在 `.app` 里面** —— 所以升级（替换 .app）不会动你的数据，
+删掉 .app 也不会连数据一起删。
+
+### 命令行（可选）
+
+应用本体就是一个可执行文件，需要时也能直接用：
+
+```bash
+/Applications/KnowledgeFlow.app/Contents/MacOS/KnowledgeFlow --status   # 看状态
+/Applications/KnowledgeFlow.app/Contents/MacOS/KnowledgeFlow --stop     # 停服务
+/Applications/KnowledgeFlow.app/Contents/MacOS/KnowledgeFlow --setup    # 重跑向导
+/Applications/KnowledgeFlow.app/Contents/MacOS/KnowledgeFlow --check    # 环境自检
+```
+
+### 从源码构建 DMG
+
+```bash
+./scripts/build_macos_arm64.sh            # 产物：dist/KnowledgeFlow-macOS-arm64.dmg
+./scripts/build_macos_arm64.sh --minimal  # 不带 ASR/OCR，包更小
+```
+
+国内网络下 `files.pythonhosted.org` 常被墙（表现为 pip 报「找不到包」，其实是下不动），
+用镜像即可：
+
+```bash
+KF_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple ./scripts/build_macos_arm64.sh
+```
+
+### 当前支持的平台
+
+**Current supported architecture: Apple Silicon / arm64。**
+
+**暂不支持：Intel Mac、Windows、Linux。** 这不是没时间做，是刻意不做 ——
+v0.4 的目标是把一个平台做到「装上就能用」，而不是三个平台都半成品。
+后端本身是跨平台的（纯 Python + FastAPI），要移植只需要补打包层。
+
+### 能力边界（会如实显示在界面上）
+
+| 能力 | 需要什么 | 缺了会怎样 |
+|---|---|---|
+| 链接 / 文本 → Obsidian | 只要一个 LLM API Key | — |
+| ASR（本地语音转写） | 已随 .app 内置（faster-whisper） | 首次使用需联网下载模型 |
+| OCR（图片文字识别） | 需要系统装 `tesseract` | **自动停用**，其它功能不受影响 |
+| 抖音采集 | 你自己的抖音登录态（可选配置） | 用「手动粘贴」照常可用 |
+
+**ASR / OCR 永远不会阻塞启动** —— 引擎不在就降级，界面显示「未启用」。
+音视频解码走内置的 PyAV，**不需要**系统安装 ffmpeg。
+
 
 ---
 

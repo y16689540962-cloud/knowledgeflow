@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  KnowledgeFlow.app 的 Info.plist 模板。
+  构建脚本会把 __VERSION__ 替换成真实版本号再拷进 .app/Contents/。
+
+  几点说明：
+  * LSUIElement = false —— 应用要出现在 Dock 里，用户才能右键「退出」；
+    而「退出」发的是 SIGTERM，启动器会据此把后端子进程收干净。
+  * NSHighResolutionCapable = true —— Retina 下不糊。
+  * LSMinimumSystemVersion 与 packaging/macos/launcher/kf_app/paths.py
+    里的 MIN_MACOS_VERSION 必须一致（有测试钉住）。
+  * 不写 NSAppleEventsUsageDescription：我们用 osascript 显示**自己**的对话框，
+    不动别的应用，因此不需要自动化权限。
+-->
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key>
+  <string>KnowledgeFlow</string>
+  <key>CFBundleDisplayName</key>
+  <string>KnowledgeFlow</string>
+  <key>CFBundleExecutable</key>
+  <string>KnowledgeFlow</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.knowledgeflow.desktop</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>__VERSION__</string>
+  <key>CFBundleVersion</key>
+  <string>__BUILD__</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>12.0</string>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.productivity</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>LSUIElement</key>
+  <false/>
+  <key>NSSupportsAutomaticTermination</key>
+  <false/>
+  <key>NSSupportsSuddenTermination</key>
+  <false/>
+</dict>
+</plist>

@@ -571,7 +571,7 @@ async def test_unexpected_exception_is_500_not_swallowed(
 # --------------------------------------------------------------------------- #
 def test_openapi_schema_is_exportable(api_app: FastAPI) -> None:
     spec = api_app.openapi()
-    assert spec["info"]["version"] == "0.3.3"
+    assert spec["info"]["version"] == "0.4.0"
 
     paths = spec["paths"]
     for expected in (

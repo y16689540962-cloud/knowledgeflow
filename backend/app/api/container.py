@@ -83,7 +83,7 @@ class AppContainer:
     #: 启动时恢复本身失败了（不是「任务失败」，是恢复流程炸了）
     recovery_error: str | None = None
     #: 供 /api/meta 之类展示；不含任何密钥
-    version: str = field(default="0.3.3")
+    version: str = field(default="0.4.0")
 
     @property
     def vault_configured(self) -> bool:

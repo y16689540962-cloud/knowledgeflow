@@ -20,6 +20,10 @@ data/
 # --- 生成的产物 ---
 openapi.json
 
+# --- macOS 构建产物（DMG 作为 Release 附件发布，不进仓库）---
+build/
+dist/
+
 # --- 编辑器 / 系统 ---
 .vscode/
 .idea/

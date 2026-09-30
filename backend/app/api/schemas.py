@@ -22,7 +22,7 @@ from app.pipeline.result import ProcessingResult, StepRecord
 from app.schemas.content import RawContent
 from app.schemas.enums import MediaType
 
-API_VERSION = "0.3.3"
+API_VERSION = "0.4.0"
 
 
 class _Strict(BaseModel):

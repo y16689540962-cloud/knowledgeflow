@@ -90,7 +90,7 @@ class Settings(BaseSettings):
         if not value:
             raise ValueError("DATABASE_URL 不能为空")
         if not value.startswith("sqlite"):
-            raise ValueError("V0.3.3 只支持 sqlite DATABASE_URL")
+            raise ValueError("当前只支持 sqlite 的 DATABASE_URL")
         return value
 
     @field_validator("log_level", mode="before")

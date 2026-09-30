@@ -40,7 +40,7 @@ from app.logging_config import log_event, setup_logging
 from app.providers.base import LLMProvider
 
 API_TITLE = "KnowledgeFlow API"
-API_VERSION = "0.3.3"
+API_VERSION = "0.4.0"
 
 #: Chrome 扩展的来源形如 ``chrome-extension://<32 个 a-p 字母>``。
 #: **只**放行这一种 —— 未打包扩展的 id 每次加载都可能变，所以不能写死，
