@@ -5,19 +5,25 @@
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
-![一条抖音 → 一份笔记](docs/images/pipeline.png)
+![别让模型替你做判断](docs/images/pipeline.png)
 
-**把互联网上的碎片信息，变成结构化、可检索、带出处的 Obsidian 知识资产。**
+**别让模型替你做判断。**
+
+剪藏工具都在做「把内容转成文字」；这个项目多做一步：**分清哪句是事实、哪句是作者的观点或预测，
+以及这句话在原文里到底有没有出处** —— 而且「有没有出处」不由模型自己说了算。
 
 给一条抖音链接、一段手贴的文案、或者一个本地音视频文件，拿回一份**固定 13 个章节**的
 Obsidian 笔记：摘要 / 核心观点（分事实·观点·推论·预测）/ 原文引用 / 未验证信息 /
 相关实体与主题双链 / 全文逐字稿 ……
 
 > **English TL;DR** — KnowledgeFlow turns short-video links, pasted text, and local
-> media files into structured, citation-grounded Obsidian notes: an LLM pipeline with
-> rule-based grounding checks, deterministic deduplication, and a Chrome extension for
-> one-click clipping. Docs are in Chinese; code, tests and comments are written to be
-> readable either way. **For personal / research use only.**
+> media files into structured Obsidian notes. What makes it different from a clipper:
+> whether a statement can actually be traced back to the source is decided by
+> **deterministic rules, not by the model's own say-so** — so every claim carries a
+> quote, and unsupported ones get their own section instead of being blended into the
+> summary. An LLM pipeline with rule-based grounding checks, deterministic dedup,
+> and a Chrome extension. Docs are in Chinese; code and tests read either way.
+> **For personal / research use only.**
 
 ---
 
