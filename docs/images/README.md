@@ -9,6 +9,9 @@ README 与 GitHub 社交卡片用的图。**全部使用虚构示例数据** —
 | `web-ui-ingest.png` / `web-ui-library.png` | README「界面」段：Web 界面与内容库 |
 | `extension-popup.png` | README「界面」段：Chrome 扩展面板 |
 | `social-preview.png` | **不**在 README 里。上传到仓库 Settings → Social preview（1280×640），决定分享到微信/飞书/X 时那张卡片的缩略图 |
+
+> 注意：这张是 **16:9 横版**，为 GitHub 社交卡而设计。要给小红书用（3:4 竖版）
+> **不能直接裁** —— 流程链会被切断。需要另做一版竖向排版。
 | `src/*.html` | 前两张的**设计源**（改文案/配色改这里，再重新渲染） |
 
 ## 重新生成
