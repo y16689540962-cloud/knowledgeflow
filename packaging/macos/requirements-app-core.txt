@@ -1,0 +1,21 @@
+# KnowledgeFlow 桌面版 · 核心依赖（必须装成功，否则构建失败）
+#
+# 与 backend/requirements.txt 的差别：**去掉只服务于开发/测试的东西**。
+# 后端代码一行不改 —— 这里只是「同一套代码，装更少的包」。
+#
+# 去掉的：
+#   pytest / pytest-asyncio / coverage   → 测试才用，用户机器上不需要
+#   playwright                           → 只服务「真实浏览器端到端测试」（135MB）
+#
+# 加回的：
+#   下面 requirements-app-media.txt 里的可选能力，单独一步装，
+#   失败了只降级不中断（见 scripts/build_macos_arm64.sh 的说明）。
+
+fastapi>=0.110,<1.0
+uvicorn>=0.27,<1.0
+pydantic>=2.7,<3.0
+pydantic-settings>=2.2,<3.0
+SQLAlchemy[asyncio]>=2.0.30,<3.0
+aiosqlite>=0.20
+httpx>=0.27
+PyYAML>=6.0

@@ -1,6 +1,6 @@
 [project]
 name = "knowledgeflow-backend"
-version = "0.3.3"
+version = "0.4.0"
 description = "KnowledgeFlow - 互联网碎片信息 → 结构化知识资产 → Obsidian"
 requires-python = ">=3.11"
 

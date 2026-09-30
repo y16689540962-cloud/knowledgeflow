@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "KnowledgeFlow",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "把当前抖音视频一键变成 Obsidian 里的结构化笔记",
   "action": {
     "default_title": "KnowledgeFlow · 采集这条抖音",
