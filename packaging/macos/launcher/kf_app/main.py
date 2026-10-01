@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
         stopped = svc.stop_by_state(paths, port)
         if stopped:
             print("已停止 KnowledgeFlow 服务")
-        elif svc.health(port) is not None:
+        elif svc.health_with_retry(port) is not None:
             print(f"端口 {port} 上仍有服务在响应，但没能停止它（可能不是本应用启动的）")
             return EXIT_ERROR
         else:
@@ -99,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_OK
 
     if args.status:
-        health = svc.health(port)
+        health = svc.health_with_retry(port)
         if health is None:
             print(f"未运行（端口 {port}）")
             return EXIT_ERROR
@@ -120,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_OK
 
     # 端口被别的程序占着 → 说清楚，而不是让它去撞 "Address already in use"
-    if svc.port_busy(port) and svc.health(port) is None:
+    if svc.port_busy(port) and svc.health_with_retry(port) is None:
         _notify(
             f"端口 {port} 被其它程序占用了。\n\n"
             "可以在终端里用 --port 换一个端口，或先关掉占用它的程序。"

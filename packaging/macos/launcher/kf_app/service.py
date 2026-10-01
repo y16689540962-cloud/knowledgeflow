@@ -69,6 +69,29 @@ def health(port: int, *, timeout: float = PROBE_TIMEOUT_SECONDS) -> dict[str, An
     return payload
 
 
+#: 单次探活的重试次数。**为什么必须重试**：机器忙的时候（比如同时在跑测试套件）
+#: 一次 1.5 秒的探活可能超时，于是启动器会误判「服务没在运行」——
+#: 轻则把 ``--status`` 报成「未运行」，重则把自己的服务当成「端口被其他程序占用」，
+#: 于是拒绝启动、还给出错误的排查方向。实测这让端到端测试时过时不过。
+PROBE_ATTEMPTS = 3
+
+
+def health_with_retry(
+    port: int,
+    *,
+    attempts: int = PROBE_ATTEMPTS,
+    timeout: float = PROBE_TIMEOUT_SECONDS,
+) -> dict[str, Any] | None:
+    """带重试的探活。判定「服务在不在」一律走这条路径。"""
+    for attempt in range(max(1, attempts)):
+        payload = health(port, timeout=timeout)
+        if payload is not None:
+            return payload
+        if attempt < attempts - 1:
+            time.sleep(0.3)
+    return None
+
+
 def port_busy(port: int) -> bool:
     """端口是否被占用（不管是不是我们的服务）。"""
     import socket
@@ -85,7 +108,7 @@ def find_our_service(port: int, paths: AppPaths | None = None) -> ServiceHandle 
     后端可能还活着，这时 pid 文件已经没意义了，但服务确实还在跑 ——
     以探活为准，才能既不复用错、也不起第二个。
     """
-    if health(port) is None:
+    if health_with_retry(port) is None:
         return None
     pid: int | None = None
     if paths is not None:
