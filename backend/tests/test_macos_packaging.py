@@ -26,6 +26,7 @@ import json
 import os
 import plistlib
 import re
+import signal
 import socket
 import subprocess
 import sys
@@ -707,6 +708,99 @@ def test_end_to_end_start_serve_ui_and_stop_cleanly(
         assert (_app_home(home) / "data" / "knowledgeflow.db").is_file(), "重启后数据库不见了"
     finally:
         _terminate(again)
+
+
+def test_sigterm_during_startup_leaves_no_orphan(
+    clean_machine: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """启动**还没成功**时收到 SIGTERM，也不能留下孤儿后端。
+
+    这条用例是为一个真实缺陷写的：信号处理器原先装在后端健康**之后**
+    （在 ``main._wait_until_exit`` 里），于是「后端正在启动、用户点了退出」
+    这条路径上 SIGTERM 走**默认动作**把启动器当场打死 —— ``finally`` 不执行，
+    已经 ``Popen`` 出来的后端成了孤儿，还继续占着端口。启动期最长 60 秒，
+    这个窗口一点都不窄。
+
+    CI 在 Python 3.11 上撞到过它：``launcher.log`` 里既没有「服务就绪」也没有
+    「关闭后端」，而端口 25 秒后仍在应答 200。但端到端用例撞上它靠的是**竞态** ——
+    只要在那 0.4 秒的探活间隙里把断言做完就输。所以这里不赌时序：
+    给启动器一个**故意慢启动**的内嵌 runtime，把「子进程已存在」与
+    「后端已健康」之间的窗口撑到几秒，竞态变成必现。
+    """
+    delay = 6
+    home, vault = clean_machine
+    port = _free_port()
+    base = f"http://127.0.0.1:{port}"
+
+    # 假的「内嵌 Python」：先睡够，再把自己换成真解释器。
+    # 目的是让「子进程活着」与「后端健康」之间有一段稳定间隔。
+    slow_runtime = tmp_path / "slow-runtime"
+    (slow_runtime / "bin").mkdir(parents=True)
+    shim = slow_runtime / "bin" / "python3"
+    shim.write_text(
+        "#!/bin/sh\n" f"sleep {delay}\n" f'exec "{sys.executable}" "$@"\n',
+        encoding="utf-8",
+    )
+    shim.chmod(0o755)
+
+    env = _launcher_env(home, vault)
+    env["KF_DEV_RUNTIME"] = str(slow_runtime)  # 覆盖成慢速 runtime
+
+    state_file = _app_home(home) / "runtime" / "service.json"
+    started_at = time.monotonic()
+    proc = _spawn_launcher(env, "--port", str(port), "--no-browser")
+    child_pid = 0
+    try:
+        # 等子进程真的被拉起来：状态文件由 svc.start() 在 Popen 之后立刻写。
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline and not child_pid:
+            if state_file.is_file():
+                try:
+                    child_pid = int(json.loads(state_file.read_text(encoding="utf-8"))["pid"])
+                except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+                    child_pid = 0
+            if not child_pid:
+                time.sleep(0.2)
+        assert child_pid, f"启动器没能拉起后端\n{_diagnostics(env, home)}"
+
+        # 前置条件：此刻后端确实**还没健康**（shim 还在睡）。没有这条，
+        # 用例会退化成「启动完成后再退出」，测不到目标路径却依然绿。
+        assert _http_status(f"{base}/api/health") is None, (
+            "shim 没起作用：后端在启动窗口内就健康了，这条用例失去意义"
+        )
+        assert kf_service.pid_alive(child_pid), "后端子进程本该还活着"
+
+        # 用户在这时候点了「退出」
+        proc.terminate()
+        assert proc.wait(timeout=40) == 0, (
+            f"启动途中退出应当正常收尾（exit 0），实际退出码 {proc.returncode}\n"
+            f"{_diagnostics(env, home)}"
+        )
+
+        # ① 子进程必须被收掉 —— 不能只是启动器自己跑了
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline and kf_service.pid_alive(child_pid):
+            time.sleep(0.2)
+        assert not kf_service.pid_alive(child_pid), (
+            f"启动途中退出留下了孤儿后端（pid={child_pid}）\n{_diagnostics(env, home)}"
+        )
+
+        # ② 慢启动窗口整个过去之后，端口仍然是空的。
+        #    孤儿若活下来，正是这个时间点变成真正的服务 —— 这才是用户能看见的症状。
+        remaining = started_at + delay + 2.0 - time.monotonic()
+        if remaining > 0:
+            time.sleep(remaining)
+        assert _http_status(f"{base}/api/health") is None, (
+            f"孤儿后端最终真的起来了，端口 {port} 仍在应答\n{_diagnostics(env, home)}"
+        )
+    finally:
+        _terminate(proc)
+        # 只会在用例失败（孤儿确实存在）时命中；收掉它，免得污染后续用例的端口。
+        if child_pid and kf_service.pid_alive(child_pid):
+            try:
+                os.kill(child_pid, signal.SIGKILL)
+            except OSError:
+                pass
 
 
 def test_stop_command_reports_when_nothing_runs(

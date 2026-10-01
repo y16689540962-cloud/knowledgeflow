@@ -206,10 +206,23 @@ def start(
     return ServiceHandle(port=port, pid=process.pid, process=process, owned=True)
 
 
-def wait_healthy(handle: ServiceHandle, *, timeout: float = STARTUP_TIMEOUT_SECONDS) -> bool:
-    """等后端真正可用。进程中途退出 → 立刻放弃（省得白等一分钟）。"""
+def wait_healthy(
+    handle: ServiceHandle,
+    *,
+    timeout: float = STARTUP_TIMEOUT_SECONDS,
+    should_stop: Callable[[], bool] | None = None,
+) -> bool:
+    """等后端真正可用。进程中途退出 → 立刻放弃（省得白等一分钟）。
+
+    ``should_stop`` 是「启动过程中用户要求退出」的探针。**这个参数不是可选的装饰**：
+    启动期最长可以等 60 秒，而这段时间里用户完全可能已经关掉应用了
+    （Dock 右键「退出」= SIGTERM）。没有它，调用方就得白等满一轮超时，
+    用户看到的是「点了退出没反应」。
+    """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
+        if should_stop is not None and should_stop():
+            return False  # 用户要求退出
         if handle.process is not None and handle.process.poll() is not None:
             return False  # 进程已经死了
         if health(handle.port) is not None:
