@@ -32,7 +32,7 @@ Obsidian 笔记：摘要 / 核心观点（分事实·观点·推论·预测）/ 
 > topics. Every claim carries a quote; anything without textual support is filed
 > separately instead of being blended into the summary. Two-track architecture
 > (a core pipeline that runs fully offline + a degradation-tolerant ingestion layer),
-> 1490 tests, 97% line coverage, a FastAPI backend, a zero-build web UI, and a Chrome
+> 1491 tests, 97% line coverage, a FastAPI backend, a zero-build web UI, and a Chrome
 > extension. **macOS Apple Silicon one-click installer** included.
 > Docs are in Chinese; code, tests and comments read either way. **Personal / research use only.**
 
@@ -242,7 +242,7 @@ $EDITOR backend/.env
 cd backend && ../.venv/bin/python -m pytest
 ```
 
-期望：**1490 passed / 16 skipped**。16 条 skip 是设计如此：
+期望：**1491 passed / 16 skipped**。16 条 skip 是设计如此：
 
 - 4 条真实 ASR / OCR（需要装引擎，首次还要联网下模型）
 - 2 条真实浏览器端到端（需要 Playwright + Chrome）
@@ -362,7 +362,7 @@ backend/
     db/            SQLAlchemy async（SQLite）
     web/           零构建静态界面
   scripts/         一致的验收脚本 + 三个质量守卫
-  tests/           1490 项，全程离线
+  tests/           1491 项，全程离线
 extension/         Chrome MV3 扩展
 ```
 
@@ -386,7 +386,7 @@ extension/         Chrome MV3 扩展
 
 | 指标 | 数值 |
 |---|---|
-| 用例 | 1490 passed / 16 skipped（共 1506） |
+| 用例 | 1491 passed / 16 skipped（共 1507） |
 | 行覆盖率 | **97.0%**（`scripts/check_coverage.py` 有 90% 下限守卫） |
 | 运行网络依赖 | **零** —— 全部用 `httpx.MockTransport` / Mock LLM |
 | 真实联网验证 | 抖音采集、DeepSeek 分析、ASR、OCR、浏览器端到端都真跑过 |

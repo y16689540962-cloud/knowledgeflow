@@ -23,7 +23,7 @@ back a structured Obsidian note with **13 fixed sections**: summary, key points 
 "unverified" section, and `[[wikilinks]]` to entities and topics.
 
 > **TL;DR** — Two-track architecture (a core pipeline that runs fully offline plus a
-> degradation-tolerant ingestion layer), 1490 tests, 97% line coverage, a FastAPI
+> degradation-tolerant ingestion layer), 1491 tests, 97% line coverage, a FastAPI
 > backend, a zero-build web UI, a Chrome extension, and a **macOS Apple Silicon
 > one-click installer**. **Personal / research use only.**
 
@@ -249,7 +249,7 @@ The minimum you need:
 cd backend && ../.venv/bin/python -m pytest
 ```
 
-Expected: **1490 passed / 16 skipped**. The 16 skips are by design:
+Expected: **1491 passed / 16 skipped**. The 16 skips are by design:
 
 - 4 real ASR / OCR tests (need the engines, plus a model download on first run)
 - 2 real-browser end-to-end tests (need Playwright + Chrome)
@@ -375,7 +375,7 @@ backend/
     db/            SQLAlchemy async (SQLite)
     web/           zero-build static UI
   scripts/         acceptance scripts + three quality guards
-  tests/           1490 tests, fully offline
+  tests/           1491 tests, fully offline
 packaging/macos/   desktop launcher + Info.plist + app requirements
 extension/         Chrome MV3 extension
 ```
@@ -407,7 +407,7 @@ These were all learned the hard way. They live in code comments; here they are i
 
 | Metric | Value |
 |---|---|
-| Tests | 1490 passed / 16 skipped (1506 total) |
+| Tests | 1491 passed / 16 skipped (1507 total) |
 | Line coverage | **97.0%** (`scripts/check_coverage.py` enforces a 90% floor) |
 | Network needed to run tests | **none** — all via `httpx.MockTransport` / mock LLM |
 | Verified against the real world | Douyin ingestion, DeepSeek analysis, ASR, OCR, browser E2E all really run |
