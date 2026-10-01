@@ -159,15 +159,25 @@ confidence score, and anything without textual support gets its own "unverified"
 
 ### Screenshots
 
-### Demo (5 seconds)
+### Demo (6 seconds each)
 
-![Web UI demo: fill the form, click once, 13 steps, note written](docs/images/demo-web-ui.gif)
+**① Douyin link → a note** (real short-link resolution + detail API + real model)
 
-> This is a **frame-by-frame composite**, not a screen recording (this machine has no
+![Douyin demo: paste the whole share text, ingest, 13 steps, note written](docs/images/demo-douyin.gif)
+
+**② Manual paste → a note**
+
+![Paste demo: fill the form, click once, 13 steps, note written](docs/images/demo-web-ui.gif)
+
+> Both are **frame-by-frame composites**, not screen recordings (this machine has no
 > screen-recording permission). The UI, the service and the model are all real — the
-> 6 seconds spent in `analyze` really were a model call; only the waiting was
-> jump-cut, and the cursor is drawn in post.
-> A video version for social posts: `docs/images/demo-web-ui.mp4`.
+> seconds spent in `analyze` really were model calls; only the waiting was jump-cut,
+> and the cursor is drawn in post.
+>
+> **The Douyin clip shows a real public video** (it demonstrates the real pipeline, so the
+> share text, video title and author nickname are genuine); the manual-paste clip uses
+> fabricated sample data.
+> Video versions for social posts: `docs/images/demo-douyin.mp4`, `docs/images/demo-web-ui.mp4`.
 
 ### Screenshots
 
