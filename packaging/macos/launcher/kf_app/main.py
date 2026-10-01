@@ -143,10 +143,28 @@ def main(argv: list[str] | None = None) -> int:
     # ---- 启动 ----
     env = cfg.build_env(paths, settings)
     log.info("启动后端：port=%s db=%s", port, paths.database_file)
+
+    # **信号处理器必须在拉子进程之前装好**，不能等后端健康了再装。
+    #
+    # 以前是装在 _wait_until_exit() 里的 —— 于是「后端正在启动、用户就退出了」
+    # 这条路径上，SIGTERM 走**默认动作**把启动器当场打死：finally 不执行、
+    # terminate() 不执行，已经 Popen 出来的后端变成**孤儿进程**，还占着端口。
+    # 启动期最长 60 秒，这个窗口一点都不窄。
+    #
+    # 定位证据来自 CI（launcher.log 里既没有「服务就绪」也没有「关闭后端」，
+    # 而端口在 25 秒后仍然应答 200）。见 tests/test_macos_packaging.py 的
+    # test_sigterm_during_startup_leaves_no_orphan。
+    stop = _Stop()
+    _install_signal_handlers(stop)
+
     handle = svc.start(paths, env, port, log_path=paths.app_log)
 
     try:
-        if not svc.wait_healthy(handle):
+        if not svc.wait_healthy(handle, should_stop=lambda: stop.requested):
+            if stop.requested:
+                # 用户自己关的，不是故障 —— 说成「启动失败」会让人以为出了问题
+                log.info("启动过程中收到退出信号，放弃启动")
+                return EXIT_OK
             tail = svc.tail_log(paths.app_log)
             svc.terminate(handle)
             svc.clear_state(paths)
@@ -163,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.no_browser:
             svc.open_browser(base_url)
 
-        _wait_until_exit(handle)
+        _wait_until_exit(handle, stop)
         return EXIT_OK
     finally:
         if handle.owned:
@@ -173,16 +191,25 @@ def main(argv: list[str] | None = None) -> int:
             log.info("已退出")
 
 
-def _wait_until_exit(handle: svc.ServiceHandle) -> None:
-    """等用户关掉应用，或者后端起不来自己退了。
+class _Stop:
+    """退出信号标志。
 
-    同时处理 SIGTERM / SIGINT：Dock 图标右键「退出」发的是 SIGTERM，
-    命令行 Ctrl-C 是 SIGINT —— 两条路都必须把子进程收干净。
+    为什么不直接用 ``signal.signal`` 的默认行为：默认动作是**当场终止进程**，
+    而我们需要先把拉起来的后端收掉 —— 收尾逻辑在 ``main()`` 的 ``finally`` 里，
+    进程被打死就永远走不到。
     """
-    stop = {"flag": False}
 
-    def _on_signal(signum: int, _frame: object) -> None:
-        stop["flag"] = True
+    __slots__ = ("requested",)
+
+    def __init__(self) -> None:
+        self.requested = False
+
+
+def _install_signal_handlers(stop: _Stop) -> None:
+    """装 SIGTERM / SIGINT 处理器。非主线程装不上，安静跳过。"""
+
+    def _on_signal(_signum: int, _frame: object) -> None:
+        stop.requested = True
 
     for sig in (signal.SIGTERM, signal.SIGINT):
         try:
@@ -190,8 +217,15 @@ def _wait_until_exit(handle: svc.ServiceHandle) -> None:
         except ValueError:  # 非主线程
             pass
 
+
+def _wait_until_exit(handle: svc.ServiceHandle, stop: _Stop) -> None:
+    """等用户关掉应用，或者后端起不来自己退了。
+
+    Dock 图标右键「退出」发的是 SIGTERM，命令行 Ctrl-C 是 SIGINT ——
+    两条路都归结为 ``stop.requested``，由 ``main()`` 的 ``finally`` 统一收干净。
+    """
     process = handle.process
-    while not stop["flag"]:
+    while not stop.requested:
         if process is not None and process.poll() is not None:
             return  # 后端自己退了
         time.sleep(0.3)
