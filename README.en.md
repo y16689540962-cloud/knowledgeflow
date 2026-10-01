@@ -159,6 +159,18 @@ confidence score, and anything without textual support gets its own "unverified"
 
 ### Screenshots
 
+### Demo (5 seconds)
+
+![Web UI demo: fill the form, click once, 13 steps, note written](docs/images/demo-web-ui.gif)
+
+> This is a **frame-by-frame composite**, not a screen recording (this machine has no
+> screen-recording permission). The UI, the service and the model are all real — the
+> 6 seconds spent in `analyze` really were a model call; only the waiting was
+> jump-cut, and the cursor is drawn in post.
+> A video version for social posts: `docs/images/demo-web-ui.mp4`.
+
+### Screenshots
+
 <table>
 <tr>
 <td width="50%"><img src="docs/images/web-ui-ingest.png" alt="Web UI: input and the 13-step trace"><br>
