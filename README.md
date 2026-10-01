@@ -419,6 +419,14 @@ extension/         Chrome MV3 扩展
   （否则本机随便一个页面都能调采集接口）。
 - 抖音 Cookie 不回显、不进日志（有测试钉死）。
 
+## 致谢
+
+代码、测试与文档：[羊宗胜](https://github.com/y16689540962-cloud)。
+
+推理服务与依赖库（**不是代码贡献者**，但项目离不开它们）：**DeepSeek**（LLM 推理）、
+FastAPI / Pydantic / SQLAlchemy、faster-whisper / PyAV、Tesseract、python-build-standalone 等。
+完整清单与「贡献」口径见 [CONTRIBUTORS.md](CONTRIBUTORS.md)。
+
 ## License
 
 [MIT](LICENSE)

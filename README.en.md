@@ -451,6 +451,15 @@ The tests are written to **have teeth**, not to pad a count:
   (otherwise any page on your machine could call the ingestion API).
 - The Douyin cookie is never echoed and never logged (pinned by tests).
 
+## Acknowledgements
+
+Code, tests and docs by [羊宗胜](https://github.com/y16689540962-cloud).
+
+Inference service and dependencies (**not code contributors**, but the project runs on
+them): **DeepSeek** (LLM inference), FastAPI / Pydantic / SQLAlchemy,
+faster-whisper / PyAV, Tesseract, python-build-standalone and more.
+The full list, and why the distinction matters, is in [CONTRIBUTORS.md](CONTRIBUTORS.md).
+
 ## License
 
 [MIT](LICENSE)
