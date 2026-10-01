@@ -157,6 +157,17 @@ KnowledgeFlow 的做法是：**把「模型说了什么」和「规则认了什�
 
 ### 界面
 
+### 演示（5 秒）
+
+![Web 界面演示：填表 → 点一下 → 13 步执行 → 出笔记](docs/images/demo-web-ui.gif)
+
+> 这段是**逐帧合成的演示**（本机没有屏幕录制权限）：界面与服务都是真的、
+> 大模型也是真的（截图里 `analyze` 那一步 6 秒是真的在调用），
+> 只有「等待模型」的 6 秒做了跳切。光标是后期画的。
+> 小红书用的视频版：`docs/images/demo-web-ui.mp4`。
+
+### 截图
+
 <table>
 <tr>
 <td width="50%"><img src="docs/images/web-ui-ingest.png" alt="Web 界面：录入与 13 步执行明细"><br>

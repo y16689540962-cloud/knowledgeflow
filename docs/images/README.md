@@ -6,6 +6,8 @@ README 与 GitHub 社交卡片用的图。**全部使用虚构示例数据** —
 | 文件 | 用在哪 |
 |---|---|
 | `pipeline.png` | README 顶部主图：「一条抖音 → 一份笔记」+ 三条差异点 |
+| `demo-web-ui.gif` | README「演示」段：填表 → 点击 → 13 步 → 出笔记（5 秒，0.5 MB） |
+| `demo-web-ui.mp4` | 同一段的视频版（小红书用；GIF 在小红书会被当静态图） |
 | `web-ui-ingest.png` / `web-ui-library.png` | README「界面」段：Web 界面与内容库 |
 | `extension-popup.png` | README「界面」段：Chrome 扩展面板 |
 | `social-preview.png` | **不**在 README 里。上传到仓库 Settings → Social preview（1280×640），决定分享到微信/飞书/X 时那张卡片的缩略图 |
