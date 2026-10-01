@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<!-- 小红书竖版三图（3:4 · 1080×1440）。**重新排版**，不是把横版社交卡裁一刀。
+     内容竖直居中的原因：全部顶头排会让底部空一大块（第一版就是这样，很业余）。
+     全部使用虚构示例数据；文案与仓库口径同一句。 -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --ink: #EFEBF8; --soft: #B9B1CE; --mute: #7C7593; --dim: #5F5878;
+    --purple: #8B5CF6; --purple-lt: #C4B5FD; --line: rgba(255,255,255,.10);
+    --card: rgba(255,255,255,.045);
+  }
+  body { background: #0C0A12; font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; }
+  .slide {
+    width: 1080px; height: 1440px; position: relative; overflow: hidden;
+    background: radial-gradient(920px 700px at 50% -8%, #241D3C 0%, #14111D 58%, #0B0910 100%);
+    color: var(--ink); padding: 76px 72px; display: flex; flex-direction: column;
+  }
+  .slide + .slide { margin-top: 40px; }
+
+  /* 头尾固定，中间内容竖直居中 —— 这样上下留白对称，不会出现"底部一大块空" */
+  .body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+  .brand { display: flex; align-items: center; gap: 18px; flex: none; }
+  .brand svg { width: 62px; height: 62px; }
+  .brand b { font-size: 34px; font-weight: 600; }
+  .brand span { margin-left: auto; font-size: 22px; color: var(--mute); }
+
+  .hook { font-size: 84px; font-weight: 600; line-height: 1.2; letter-spacing: -1.5px; }
+  .hook em { font-style: normal; color: var(--purple-lt); }
+  .lede { margin-top: 34px; font-size: 34px; line-height: 1.6; color: var(--soft); }
+  .lede b { color: var(--ink); font-weight: 600; }
+  .pain { margin-top: 40px; font-size: 27px; line-height: 1.65; color: var(--mute); }
+  .pain b { color: var(--soft); font-weight: 500; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 40px; }
+  .chip {
+    padding: 15px 28px; border-radius: 14px; font-size: 27px;
+    background: var(--card); border: 1px solid var(--line); color: #DDD6F3;
+  }
+
+  .foot {
+    flex: none; padding-top: 28px; border-top: 1px solid var(--line);
+    font-size: 25px; color: var(--mute); line-height: 1.7;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+  .foot b { color: var(--purple-lt); font-weight: 500; }
+
+  /* ---- 第 2 张：差异点 ---- */
+  .vtitle { font-size: 62px; font-weight: 600; line-height: 1.28; letter-spacing: -.5px; }
+  .vs { margin-top: 48px; display: flex; flex-direction: column; gap: 30px; }
+  .box { border-radius: 20px; padding: 32px 34px; border: 1px solid var(--line); background: var(--card); }
+  .box.bad { opacity: .7; }
+  .box.good { border-color: rgba(167,139,250,.42); background: rgba(139,92,246,.13); }
+  .box h3 { font-size: 29px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+  .box h3 .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--dim); flex: none; }
+  .box.good h3 .dot { background: var(--purple-lt); }
+  .box p { margin-top: 16px; font-size: 27px; line-height: 1.62; color: var(--soft); }
+  .quote {
+    margin-top: 18px; padding: 20px 24px; border-left: 4px solid var(--purple);
+    background: rgba(139,92,246,.10); border-radius: 0 12px 12px 0;
+    font-size: 26px; line-height: 1.62; color: #CFC7E4;
+  }
+  .quote .tag { color: var(--purple-lt); }
+  .quote .miss { color: #F0A6A0; }
+  .quote .lbl { color: #8B84A6; }
+  .note { margin-top: 44px; font-size: 28px; color: var(--soft); line-height: 1.62; }
+  .note b { color: var(--ink); }
+
+  /* ---- 第 3 张：一键安装 ---- */
+  .install { display: flex; align-items: center; gap: 40px; margin-top: 52px; }
+  .appicon { width: 220px; height: 220px; flex: none; border-radius: 48px; }
+  .steps { display: flex; flex-direction: column; gap: 22px; }
+  .srow { display: flex; align-items: center; gap: 20px; font-size: 29px; color: var(--soft); }
+  .srow .no {
+    width: 44px; height: 44px; flex: none; border-radius: 12px; font-size: 22px;
+    background: rgba(139,92,246,.18); color: var(--purple-lt);
+    display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+  .srow b { color: var(--ink); font-weight: 500; }
+  .compare { margin-top: 54px; border-radius: 20px; padding: 30px 34px;
+             border: 1px solid var(--line); background: var(--card); font-size: 27px; line-height: 1.7; color: var(--soft); }
+  .compare .no-x { color: #8B84A6; }
+  .compare .yes { color: #DDD6F3; }
+</style>
+</head>
+<body>
+
+<!-- ───────────── 图 1 · 封面 ───────────── -->
+<div class="slide" id="s1">
+  <div class="brand">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#241C3C"/><stop offset="1" stop-color="#110E1C"/>
+        </linearGradient>
+        <radialGradient id="g2" cx="0.5" cy="0.44" r="0.62">
+          <stop offset="0" stop-color="#8B5CF6" stop-opacity="0.5"/>
+          <stop offset="1" stop-color="#8B5CF6" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect x="16" y="16" width="480" height="480" rx="116" fill="url(#g1)"/>
+      <ellipse cx="256" cy="236" rx="196" ry="176" fill="url(#g2)"/>
+      <polygon points="128,168 384,168 430,248 256,448 82,248" fill="#7C3AED"/>
+      <polygon points="170,168 342,168 306,248 206,248" fill="#A78BFA"/>
+      <polygon points="128,168 170,168 206,248 82,248" fill="#8B5CF6"/>
+      <polygon points="384,168 342,168 306,248 430,248" fill="#6D28D9"/>
+      <polygon points="82,248 206,248 256,448" fill="#5B21B6"/>
+      <polygon points="206,248 306,248 256,448" fill="#7C3AED"/>
+      <polygon points="306,248 430,248 256,448" fill="#4C1D95"/>
+      <polygon points="178,180 238,180 210,238 170,238" fill="#FFFFFF" opacity="0.16"/>
+    </svg>
+    <b>KnowledgeFlow</b>
+    <span>开源 · MIT</span>
+  </div>
+
+  <div class="body">
+    <div class="hook">别让模型<br>替你做<em>判断</em></div>
+
+    <div class="lede">
+      一条抖音进来，出去的是<br>
+      <b>分得清事实与观点、每句都能回到原文</b><br>
+      的 Obsidian 笔记
+    </div>
+
+    <div class="pain">
+      <b>存书签不会再看，手动记又太慢。</b><br>
+      而直接让大模型「总结一下」，你分不出哪句有依据。
+    </div>
+
+    <div class="chips">
+      <div class="chip">13 个固定章节</div>
+      <div class="chip">事实 · 观点 · 推论 · 预测</div>
+      <div class="chip">找不到出处的单列</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>github.com/y16689540962-cloud/knowledgeflow</b><br>
+    1490 项测试 · 97% 行覆盖率 · 本地运行，无遥测
+  </div>
+</div>
+
+<!-- ───────────── 图 2 · 差异点 ───────────── -->
+<div class="slide" id="s2">
+  <div class="brand">
+    <b>它和普通剪藏的区别</b>
+    <span>02 / 03</span>
+  </div>
+
+  <div class="body">
+    <div class="vtitle">普通剪藏给你文字，<br>这个项目告诉你<em style="color:#C4B5FD;font-style:normal">哪句能信</em></div>
+
+    <div class="vs">
+      <div class="box bad">
+        <h3><span class="dot"></span> 普通剪藏 / 直接让模型总结</h3>
+        <p>作者的预测被写成陈述句，模型顺手补的细节和原文混在一起 —— 你分不出哪句有依据。</p>
+      </div>
+
+      <div class="box good">
+        <h3><span class="dot"></span> KnowledgeFlow</h3>
+        <div class="quote">
+          <span class="tag">【事实】</span>每周采购成本从 420 元降到 260 元<br>
+          <span class="lbl">证据（原文引用）：</span>「每周采购成本从 420 元降到 260 元左右」<br>
+          <span class="lbl">状态：</span>已验证
+        </div>
+        <div class="quote" style="border-left-color:#F0A6A0;background:rgba(240,166,160,.09)">
+          <span class="miss">【未验证】</span>2027 年会被更多上班族采用<br>
+          <span class="lbl">原因：</span>原文里找不到支撑这句话的内容
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>「这句话能不能在原文里找到出处」由确定性规则判定</b>，<br>
+      模型自报的结果一律被规则覆盖。
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>github.com/y16689540962-cloud/knowledgeflow</b><br>
+    笔记里每条结论都带原文引用与置信度
+  </div>
+</div>
+
+<!-- ───────────── 图 3 · 一键安装 ───────────── -->
+<div class="slide" id="s3">
+  <div class="brand">
+    <b>而且它装得进去</b>
+    <span>03 / 03</span>
+  </div>
+
+  <div class="body">
+    <div class="vtitle">不用装 Python，<br>拖进「应用程序」就能用</div>
+
+    <div class="install">
+      <img class="appicon" id="appicon" alt="KnowledgeFlow 应用图标">
+      <div class="steps">
+        <div class="srow"><span class="no">1</span><span>下载 <b>KnowledgeFlow.dmg</b></span></div>
+        <div class="srow"><span class="no">2</span><span>拖进 <b>应用程序</b>，双击打开</span></div>
+        <div class="srow"><span class="no">3</span><span>向导问三件事：<b>Obsidian 库 / API Key / 模型</b></span></div>
+      </div>
+    </div>
+
+    <div class="compare">
+      <span class="no-x">同类工具多数要求你自己配 Python 后端环境 ——</span><br>
+      <span class="yes">这个把运行环境整个打包进 .app，打开就能用。</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>macOS Apple Silicon · Releases 页可直接下载</b><br>
+    数据存在 ~/Library/Application Support/，与 app 分离，删了不丢
+  </div>
+</div>
+
+<script>
+  // 第 3 张嵌真实的 1024px 应用图标（file:// 绝对路径，避免复制一份导致两处漂移）
+  const p = new URLSearchParams(location.search).get("icon");
+  if (p) document.getElementById("appicon").src = p;
+</script>
+</body>
+</html>
