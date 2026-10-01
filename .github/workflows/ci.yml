@@ -8,19 +8,33 @@ on:
   # 但那个 SHA 上一个 run 都没有）。没有这个入口就只能靠"推个空提交"来补跑。
   workflow_dispatch:
 
+# 最小权限：本 workflow 只读仓库。公开仓库尤其要显式声明 ——
+# 一旦某个依赖被投毒，默认 token 的写权限就是它能拿到的东西。
+permissions:
+  contents: read
+
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    strategy:
+      # 两条腿互不相关，一条挂了另一条的结果仍然要看到。
+      fail-fast: false
+      matrix:
+        # 这两个版本各有理由，不是随便选的：
+        #   3.11 = README 声明的兼容下限，不测就等于那句「Python 3.11+」没人验证过；
+        #   3.13 = 本机开发环境、也是 macOS 安装包里内嵌的那个版本。
+        # 之前只跑 3.12 —— 一个既不是下限、也不是实际交付用的版本。
+        python-version: ["3.11", "3.13"]
     defaults:
       run:
         working-directory: backend
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
@@ -34,8 +48,12 @@ jobs:
       - name: Run tests
         run: python -m pytest
 
+      # 这两道守卫的结论与 Python 版本无关，跑一遍就够；跑两遍只是让 CI 慢一倍。
+      # 放在 3.13 这条腿上，是因为它才是实际交付用的解释器。
       - name: Doc consistency guard
+        if: matrix.python-version == '3.13'
         run: python scripts/check_doc_consistency.py --skip-tests
 
       - name: Coverage guard (>= 90%)
+        if: matrix.python-version == '3.13'
         run: python scripts/check_coverage.py
