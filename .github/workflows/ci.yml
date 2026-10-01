@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # 手动触发：GitHub 偶尔会丢 push 事件（实测遇到过一次 —— 远端 HEAD 已更新，
+  # 但那个 SHA 上一个 run 都没有）。没有这个入口就只能靠"推个空提交"来补跑。
+  workflow_dispatch:
 
 jobs:
   pytest:
