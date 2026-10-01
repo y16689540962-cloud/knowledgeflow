@@ -371,6 +371,78 @@ def test_service_start_writes_state_and_uses_absolute_paths(tmp_path: Path) -> N
     assert kf_service.read_state(paths) is None
 
 
+def test_health_probe_retries_before_concluding_nothing_runs(
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """一次探活失败**不能**就断定「服务没在运行」。
+
+    机器忙时（比如同时在跑整个测试套件）单次 1.5 秒探活可能超时。早期实现只探一次，
+    于是会把自己的服务误判成「端口被别的程序占用」而拒绝启动 ——
+    端到端测试时过时不过就是这个原因。这里把「失败一次再成功」造出来。
+    """
+    calls = {"n": 0}
+    payload = {"version": "0.4.0", "llm_provider": "deepseek"}
+
+    def flaky(port: int, *, timeout: float = 0) -> dict | None:  # noqa: ARG001
+        calls["n"] += 1
+        return payload if calls["n"] >= 2 else None
+
+    monkeypatch.setattr(kf_service, "health", flaky)
+    monkeypatch.setattr(kf_service.time, "sleep", lambda _s: None)  # 测试里不用真等
+
+    assert kf_service.health_with_retry(12345) == payload
+    assert calls["n"] == 2, "应当重试一次后才拿到结果"
+
+
+def test_health_probe_gives_up_after_all_attempts(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = {"n": 0}
+
+    def always_none(port: int, *, timeout: float = 0) -> None:  # noqa: ARG001
+        calls["n"] += 1
+        return None
+
+    monkeypatch.setattr(kf_service, "health", always_none)
+    monkeypatch.setattr(kf_service.time, "sleep", lambda _s: None)
+    assert kf_service.health_with_retry(12345) is None
+    assert calls["n"] == kf_service.PROBE_ATTEMPTS
+
+
+def test_health_probe_retries_before_concluding_nothing_runs(
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """一次探活失败**不能**就断定「服务没在运行」。
+
+    机器忙时（比如同时在跑整个测试套件）单次 1.5 秒探活可能超时。早期实现只探一次，
+    于是会把自己的服务误判成「端口被别的程序占用」而拒绝启动 ——
+    端到端测试时过时不过就是这个原因。这里把「失败一次再成功」造出来。
+    """
+    calls = {"n": 0}
+    payload = {"version": "0.4.0", "llm_provider": "deepseek"}
+
+    def flaky(port: int, *, timeout: float = 0) -> dict | None:  # noqa: ARG001
+        calls["n"] += 1
+        return payload if calls["n"] >= 2 else None
+
+    monkeypatch.setattr(kf_service, "health", flaky)
+    monkeypatch.setattr(kf_service.time, "sleep", lambda _s: None)  # 测试里不用真等
+
+    assert kf_service.health_with_retry(12345) == payload
+    assert calls["n"] == 2, "应当重试一次后才拿到结果"
+
+
+def test_health_probe_gives_up_after_all_attempts(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = {"n": 0}
+
+    def always_none(port: int, *, timeout: float = 0) -> None:  # noqa: ARG001
+        calls["n"] += 1
+        return None
+
+    monkeypatch.setattr(kf_service, "health", always_none)
+    monkeypatch.setattr(kf_service.time, "sleep", lambda _s: None)
+    assert kf_service.health_with_retry(12345) is None
+    assert calls["n"] == kf_service.PROBE_ATTEMPTS
+
+
 def test_stop_does_not_claim_success_without_stopping_anything(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
