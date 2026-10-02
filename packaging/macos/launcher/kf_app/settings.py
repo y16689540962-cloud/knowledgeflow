@@ -144,8 +144,22 @@ def build_env(paths: AppPaths, settings: Settings) -> dict[str, str]:
 
     **绝对路径是这里的重点**：数据库、下载目录、缓存目录全部显式给出绝对值，
     这样无论 .app 从哪启动、cwd 是什么，行为都一致。
+
+    另一个重点是**把会污染内嵌解释器的 Python 环境变量清掉**（见下面的注释）——
+    后端跑的是 .app 里那份 runtime，环境却是从用户 shell 继承来的，两者不该混。
     """
     env = dict(os.environ)
+
+    # 用户 shell 里只要设了 PYTHONPATH，它就会插进**内嵌 runtime** 的 sys.path，
+    # 而且路径上任何叫 sitecustomize.py 的文件都会被自动执行。这不是假想问题：
+    # 本项目的构建机上就带着一个 PYTHONPATH，它一度让 Windows 版创建构建工具
+    # venv 的 ensurepip 失败。PYTHONHOME 更狠 —— 它会把内嵌 runtime 的 prefix
+    # 整个改掉，直接找不到标准库。用户级 site-packages 同理：用户 profile 里
+    # 恰好装过的包会**遮蔽** .app 里那份，于是「我这儿好好的」变成用户机器上的
+    # 一堆 ImportError。
+    for name in ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP", "PYTHONEXECUTABLE"):
+        env.pop(name, None)
+    env["PYTHONNOUSERSITE"] = "1"
 
     # LLM：provider 只认 openai / deepseek（后端是 Literal），
     # 第三方兼容端点的做法是选 openai + 自定义 BASE_URL —— 这是既有能力，不改后端。

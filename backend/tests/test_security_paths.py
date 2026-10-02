@@ -65,7 +65,7 @@ def test_sibling_directory_with_shared_prefix_blocked(tmp_path: Path) -> None:
         ensure_within_vault(vault, "../vault-evil/a.md")
 
 
-def test_symlink_escape_blocked(tmp_path: Path) -> None:
+def test_symlink_escape_blocked(tmp_path: Path, requires_symlinks: None) -> None:
     vault = tmp_path / "vault"
     vault.mkdir()
     outside = tmp_path / "outside"
@@ -76,7 +76,7 @@ def test_symlink_escape_blocked(tmp_path: Path) -> None:
         ensure_within_vault(vault, "link/evil.md")
 
 
-def test_symlink_inside_vault_allowed(tmp_path: Path) -> None:
+def test_symlink_inside_vault_allowed(tmp_path: Path, requires_symlinks: None) -> None:
     vault = tmp_path / "vault"
     (vault / "real").mkdir(parents=True)
     (vault / "alias").symlink_to(vault / "real", target_is_directory=True)

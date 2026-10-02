@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -156,11 +157,47 @@ def check_environment(paths: AppPaths) -> list[tuple[str, bool, str]]:
     return checks
 
 
+# --------------------------------------------------------------------------- #
+# 输出编码：不是每个控制台都装得下 ✓ / ✗
+# --------------------------------------------------------------------------- #
+#: 好看的标记。UTF-8 控制台、日志文件、osascript 弹窗都能显示
+_MARKS_UNICODE = ("✓", "✗")
+#: 降级标记。GBK / cp1252 这类码页里没有 U+2713，只能退回纯 ASCII
+_MARKS_ASCII = ("[OK]", "[--]")
+
+
+def console_marks(encoding: str | None = None) -> tuple[str, str]:
+    """挑一组**当前输出编码装得下**的标记，返回 ``(通过, 未通过)``。
+
+    macOS 上 ``sys.stdout`` 一般是 UTF-8，但 ``LANG=C`` 的终端 / launchd 拉起的
+    进程可能是 ``ascii`` —— 那时 ``print("✓ …")`` 抛 ``UnicodeEncodeError``，
+    把 ``--check`` 这条**纯诊断**命令变成一段 traceback。Windows 版栽过同一个
+    坑（中文 Windows 的 stdout 是 GBK，且 ``PYTHONIOENCODING`` 无效），
+    两个平台的实现保持对齐。
+
+    **只负责标记，不负责正文**：真到了 ``ascii`` 控制台，中文正文同样装不下，
+    那是另一件事（属于既有边界，不在这里假装解决）。
+    """
+    if encoding is None:
+        encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    try:
+        "".join(_MARKS_UNICODE).encode(encoding)
+    except (UnicodeEncodeError, LookupError):
+        return _MARKS_ASCII
+    return _MARKS_UNICODE
+
+
 def environment_summary(paths: AppPaths) -> str:
-    """把检查结果拼成一段人类可读的文字，用于向导展示。"""
-    lines = []
-    for name, ok, detail in check_environment(paths):
-        lines.append(f"{'✓' if ok else '✗'} {name} —— {detail}")
+    """把检查结果拼成一段人类可读的文字，用于向导展示。
+
+    标记按**输出编码**挑（见 ``console_marks``）：这句话既会被 ``--check``
+    打到控制台，也会被向导弹窗用到，而控制台的编码不一定是 UTF-8。
+    """
+    ok_mark, fail_mark = console_marks()
+    lines = [
+        f"{ok_mark if ok else fail_mark} {name} —— {detail}"
+        for name, ok, detail in check_environment(paths)
+    ]
     return "\n".join(lines)
 
 

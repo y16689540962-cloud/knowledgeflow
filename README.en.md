@@ -6,7 +6,7 @@
 ![coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
-![platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon-black)
+![platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon%20%7C%20Windows%20x64-black)
 
 ![Don't let the model do your thinking for you](docs/images/pipeline.png)
 
@@ -23,21 +23,35 @@ back a structured Obsidian note with **13 fixed sections**: summary, key points 
 "unverified" section, and `[[wikilinks]]` to entities and topics.
 
 > **TL;DR** — Two-track architecture (a core pipeline that runs fully offline plus a
-> degradation-tolerant ingestion layer), 1491 tests, 97% line coverage, a FastAPI
-> backend, a zero-build web UI, a Chrome extension, and a **macOS Apple Silicon
-> one-click installer**. **Personal / research use only.**
+> degradation-tolerant ingestion layer), 1593 tests, 97% line coverage, a FastAPI
+> backend, a zero-build web UI, a Chrome extension, and **one-click installers for macOS
+> Apple Silicon and Windows 10+ x64**. **Personal / research use only.**
 
 ---
 
-## macOS Apple Silicon (v0.4 one-click install)
+## Desktop install (macOS Apple Silicon · Windows 10+ x64)
 
-> **Requirements:** macOS 12+ · Apple Silicon · Obsidian · an LLM API key.
+> **Requirements:** macOS 12+ / Windows 10+ (x64) · Obsidian · an LLM API key.
 
-**No Python to install, no terminal, no environment variables.** Download the DMG →
-drag it into Applications → double-click → the wizard asks three things (vault / API key /
-model) → the service starts and your browser opens.
+**No Python to install, no terminal, no environment variables.**
 
-### Installation
+| Platform | Package | Form |
+|---|---|---|
+| macOS Apple Silicon | `KnowledgeFlow-macOS-arm64.dmg` | drag into Applications |
+| Windows 10+ x64 | `KnowledgeFlow-<version>-windows-x64.zip` | unzip and run (portable) |
+
+Both are **self-contained**: each bundles a Python runtime and every dependency, so
+nothing needs to be installed on the target machine first (except the Windows OCR engine
+`tesseract`, which is optional).
+
+---
+
+### macOS Apple Silicon
+
+Download the DMG → drag it into Applications → double-click → the wizard asks three things
+(vault / API key / model) → the service starts and your browser opens.
+
+#### Installation
 
 1. Download `KnowledgeFlow-macOS-arm64.dmg` (see [Releases](../../releases))
 2. Open the DMG
@@ -55,7 +69,7 @@ signed **ad-hoc**; there is no Apple Developer ID and no notarization yet.
 That is the standard macOS flow for an un-notarized app — it is not this app asking you
 to lower your security settings.
 
-### Where things live
+#### Where things live
 
 | What | Where |
 |---|---|
@@ -68,7 +82,7 @@ to lower your security settings.
 **User data is never written inside the `.app`** — so replacing the app when you upgrade
 won't touch your data, and deleting the app won't delete your notes.
 
-### Command line (optional)
+#### Command line (optional)
 
 The app bundle is also a plain executable:
 
@@ -79,7 +93,7 @@ The app bundle is also a plain executable:
 /Applications/KnowledgeFlow.app/Contents/MacOS/KnowledgeFlow --check    # environment self-check
 ```
 
-### Building the DMG from source
+#### Building the DMG from source
 
 ```bash
 ./scripts/build_macos_arm64.sh            # -> dist/KnowledgeFlow-macOS-arm64.dmg
@@ -94,21 +108,108 @@ means it can't be downloaded. Point pip at a mirror:
 KF_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple ./scripts/build_macos_arm64.sh
 ```
 
-### Supported platform
+---
 
-**Current supported architecture: Apple Silicon / arm64.**
+### Windows 10+ x64 (portable)
 
-**Not supported: Intel Mac, Windows, Linux.** That's a deliberate choice, not a missing
-afternoon of work — v0.4's goal is to make one platform genuinely installable rather than
-three platforms half-finished. The backend itself is cross-platform (pure Python +
-FastAPI); porting only needs a new packaging layer.
+Download the ZIP → unzip it into any writable directory → double-click `KnowledgeFlow.exe`
+→ the wizard asks three things (vault / API key / model) → the service starts and your
+browser opens.
+
+#### Installation
+
+1. Download `KnowledgeFlow-<version>-windows-x64.zip` (see [Releases](../../releases))
+2. Unzip it into **any writable directory** — `%LOCALAPPDATA%` or your Documents folder is
+   fine. **Do not** put it under `C:\Program Files`: that needs administrator rights, and a
+   portable package should never require elevation.
+3. Double-click `KnowledgeFlow.exe`
+4. Complete the first-run setup wizard
+
+SmartScreen may stop you on first launch, because **this build is not code-signed** (no
+certificate, so no pretending). **Do not disable any system security feature to work around
+it.** The correct step is:
+
+- Click **"More info" → "Run anyway"**. You only have to do this once.
+
+#### Where things live
+
+| What | Where |
+|---|---|
+| The app | the directory you unzipped (self-contained runtime) |
+| Your config (contains the API key, ACL limited to your account) | `%LOCALAPPDATA%\KnowledgeFlow\config\settings.json` |
+| Database | `%LOCALAPPDATA%\KnowledgeFlow\data\knowledgeflow.db` |
+| Logs | `%LOCALAPPDATA%\KnowledgeFlow\logs\` (`app.log`, `launcher.log`) |
+| Model cache | `%LOCALAPPDATA%\KnowledgeFlow\cache\` |
+
+**User data is never written inside the unzipped directory** — a portable package gets
+copied to a USB stick, moved around, or deleted and re-downloaded. If the database lived
+inside it, "unzip a fresh copy" would mean losing your data. Upgrading or moving the folder
+never touches it.
+
+The config file's access control is tightened with `icacls` to your account only, and the
+**inherited `Users` / `Everyone` entries are removed** — otherwise another account on the
+same machine could read your API key.
+
+#### Command line (optional)
+
+The double-click entry point is `KnowledgeFlow.exe` (**no console window**). A separate
+`.cmd` is provided for the command line, because a windowless exe has nowhere to send
+`print()` — and `--status` / `--stop` / `--check` exist precisely to be read:
+
+```bat
+KnowledgeFlow.cmd --status   :: is it running?
+KnowledgeFlow.cmd --stop     :: stop the service
+KnowledgeFlow.cmd --setup    :: re-run the wizard
+KnowledgeFlow.cmd --check    :: environment self-check
+```
+
+#### Building the ZIP from source
+
+```powershell
+.\scripts\build_windows_x64.ps1            # -> dist\KnowledgeFlow-<version>-windows-x64.zip
+.\scripts\build_windows_x64.ps1 -Minimal   # without ASR/OCR, smaller package
+.\scripts\build_windows_x64.ps1 -NoZip     # directory only, no ZIP
+.\scripts\build_windows_x64.ps1 -Clean     # wipe build\ first
+```
+
+Requires **Windows 10+ x64** and **PowerShell 5.1+** (`tar` / `curl` / `robocopy` ship with
+Windows). In mainland China, use a mirror the same way:
+
+```powershell
+$env:KF_PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
+.\scripts\build_windows_x64.ps1
+```
+
+> **This script must be saved as UTF-8 *with BOM*.** Windows PowerShell 5.1 decodes a
+> `.ps1` without a BOM using the system ANSI code page (GBK on a Chinese machine), and the
+> Chinese comments in this script then swallow the quotes that follow them — you get a pile
+> of nonsensical syntax errors that never mention encoding. The reasoning and the full
+> trail of what went wrong are in the script's own header comment.
+
+Design and audit notes (why it's packaged this way, and every trap hit along the way):
+[`docs/v0.4-windows-packaging.md`](docs/v0.4-windows-packaging.md).
+
+---
+
+### Supported platforms
+
+**Packaged: macOS Apple Silicon (arm64) · Windows 10+ x64.**
+
+**Not supported: Intel Mac, Windows on ARM (arm64), Linux.** Not because they're
+impossible — the backend is cross-platform (pure Python + FastAPI); only a packaging layer
+is missing. It's deliberate: every extra platform is another build artefact to maintain and
+verify on real hardware, and half-finished is worse than absent.
+
+Adding one means writing a packaging layer alongside `packaging/macos/` or
+`packaging/windows/` — **not a single line of business code changes**, because the layer
+only does "bundled interpreter + environment mapping + launch".
 
 ### Capability boundaries (shown honestly in the UI)
 
 | Capability | Needs | If missing |
 |---|---|---|
 | Links / text → Obsidian | just an LLM API key | — |
-| ASR (local speech-to-text) | bundled in the `.app` (faster-whisper) | first use downloads a model |
+| ASR (local speech-to-text) | bundled (faster-whisper) | first use downloads a model |
 | OCR (text in images) | system `tesseract` | **silently disabled**, everything else works |
 | Douyin ingestion | your own Douyin session (optional) | "manual paste" still works |
 
@@ -156,8 +257,6 @@ confidence score, and anything without textual support gets its own "unverified"
 | **Chrome extension** | Open a Douyin video page → click the toolbar icon | everyday clipping |
 | **Web UI** | `http://127.0.0.1:8000` — paste text or a link | no extension needed |
 | **HTTP API** | `POST /api/ingest/{manual,douyin,media}` | scripts / automation |
-
-### Screenshots
 
 ### Demo (6 seconds each)
 
@@ -208,7 +307,7 @@ confidence score, and anything without textual support gets its own "unverified"
 ### 0. Prerequisites
 
 - **Python 3.11+** (developed on 3.13)
-- macOS / Linux (Windows untested)
+- macOS / Linux / Windows (Windows is packaged and verified on real hardware as of v0.4 — see above)
 - An LLM API key (any OpenAI-compatible endpoint; tested with **DeepSeek**)
 - An **Obsidian vault** (where the notes end up)
 
@@ -219,6 +318,8 @@ git clone <this-repo> && cd knowledgeflow
 python3 -m venv .venv
 .venv/bin/pip install -r backend/requirements.txt
 ```
+
+> On Windows replace `.venv/bin/` with `.venv\Scripts\` (same for every command below).
 
 > In `requirements.txt`, ASR (faster-whisper) and OCR (pytesseract) are **optional**:
 > failing to install them, or not having the engine, never blocks the core pipeline —
@@ -249,11 +350,26 @@ The minimum you need:
 cd backend && ../.venv/bin/python -m pytest
 ```
 
-Expected: **1491 passed / 16 skipped**. The 16 skips are by design:
+Expected: **all green**. The repo currently holds **1593** tests (measured on Windows x64:
+1572 passed / 22 skipped), and a batch is skipped by design:
 
-- 4 real ASR / OCR tests (need the engines, plus a model download on first run)
-- 2 real-browser end-to-end tests (need Playwright + Chrome)
-- 10 guards over an internal progress document (that document is not published)
+- **4** real ASR / OCR tests (need the engines, plus a model download on first run)
+- **real-browser end-to-end tests** (need Playwright + Chrome)
+- **8** guards over an internal progress document (that document is not published)
+- **platform- / environment-specific tests**: the ones in either packaging layer that
+  depend on that platform's syscalls (Windows process/port management, macOS
+  `os.killpg` / `lsof`, the Unix executable bit), the symlink-escape cases
+  (a normal Windows user cannot create a real symlink), and the JS syntax/behaviour
+  checks that need `node`
+
+So **the skip count varies with platform and with which optional dependencies are
+installed** — do not compare it against a fixed number; the `1572 / 22` above is just
+one measurement on Windows x64.
+
+> A note on the arithmetic: `1572 + 22 = 1594`, one more than 1593. That is not a typo —
+> without playwright, `test_web_ui_browser.py` is skipped **at module level during
+> collection**, and pytest records that as its own skip entry, which is not part of the
+> 1593 collected items.
 
 To run the real engines / browser:
 
@@ -375,8 +491,9 @@ backend/
     db/            SQLAlchemy async (SQLite)
     web/           zero-build static UI
   scripts/         acceptance scripts + three quality guards
-  tests/           1491 tests, fully offline
-packaging/macos/   desktop launcher + Info.plist + app requirements
+  tests/           1593 tests, fully offline
+packaging/macos/   macOS launcher + Info.plist + app requirements
+packaging/windows/ Windows launcher (kf_app) + PyInstaller entry + app requirements
 extension/         Chrome MV3 extension
 ```
 
@@ -407,7 +524,7 @@ These were all learned the hard way. They live in code comments; here they are i
 
 | Metric | Value |
 |---|---|
-| Tests | 1491 passed / 16 skipped (1507 total) |
+| Tests | **1593** tests, all green by default (skips vary by platform and optional deps — see "Run the tests") |
 | Line coverage | **97.0%** (`scripts/check_coverage.py` enforces a 90% floor) |
 | Network needed to run tests | **none** — all via `httpx.MockTransport` / mock LLM |
 | Verified against the real world | Douyin ingestion, DeepSeek analysis, ASR, OCR, browser E2E all really run |
@@ -439,6 +556,13 @@ The tests are written to **have teeth**, not to pad a count:
 - Local media files have no natural unique id → they fall back to `hash:` and are flagged
   for manual review (by design).
 - The service has no authentication and should only be bound to loopback.
+- **The Windows build is not code-signed**, so SmartScreen warns on first launch. That's
+  deliberate — there is no certificate, so the build doesn't pretend there is. The correct
+  way to proceed is in the Windows install section above.
+- **The Windows package is portable and touches nothing outside its own folder plus
+  `%LOCALAPPDATA%\KnowledgeFlow\`**: no registry keys, no service, no Start-menu entry, no
+  autostart. Deleting the unzipped folder is the uninstall (`--stop` the service first if
+  it's running).
 
 ## Security and privacy
 

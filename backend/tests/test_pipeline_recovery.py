@@ -28,6 +28,20 @@ async def age_content(db: Database, content_id: str, *, seconds: int) -> None:
             )
 
 
+async def pin_created_at(db: Database, content_id: str, value: str) -> None:
+    """把 ``created_at`` 钉成**指定**值（绝对，不是相对）。
+
+    与 :func:`age_content` 的区别就是要「绝对」：需要让两条记录拿到**完全相同**
+    的时间戳时，相对偏移做不到 —— 两次调用之间 ``utc_now()`` 本身就差几毫秒，
+    一旦跨过秒边界（``to_iso`` 只到秒）就又不相等了。
+    """
+    async with db.session_factory() as session:
+        async with session.begin():
+            await session.execute(
+                update(Content).where(Content.id == content_id).values(created_at=value)
+            )
+
+
 async def set_status(db: Database, content_id: str, status: str) -> None:
     async with db.session_factory() as session:
         async with session.begin():
@@ -189,7 +203,34 @@ async def test_list_by_status(db: Database, repo: ContentRepository, raw_content
     # 同一秒写入 → created_at 相同，顺序不保证，按集合断言
     assert {row.id for row in await repo.list_by_status("pending")} == {first, second}
     assert await repo.list_by_status("completed") == []
-    assert [row.id for row in await repo.list_by_status("pending")] == sorted([first, second])
+
+
+async def test_list_by_status_orders_by_created_at_then_id(
+    db: Database, repo: ContentRepository, raw_content, mixed_raw_content
+) -> None:
+    """排序契约是 ``ORDER BY (created_at, id)``。
+
+    **这一条以前是会偶发失败的。** ``created_at`` 只到秒（``to_iso`` 里
+    ``replace(microsecond=0)``），两次紧挨着的插入本来就可能落在不同的秒里 ——
+    那时顺序由时间戳决定，跟 id 的字典序毫无关系，而原断言拿它跟
+    ``sorted([first, second])`` 比。实测跑了很多轮才撞到一次跨秒，
+    所以「大部分时候绿」并不代表它对。
+
+    这里把时间戳钉成同一个值，让 ``id`` 成为唯一的决胜键 —— 顺序就确定了；
+    再把一条推到更早，反过来确认 ``created_at`` 优先于 ``id``。
+    """
+    first = await insert_raw(repo, raw_content)
+    second = await insert_raw(repo, mixed_raw_content)
+
+    same_instant = "2026-01-01T00:00:00Z"
+    await pin_created_at(db, first, same_instant)
+    await pin_created_at(db, second, same_instant)
+    rows = await repo.list_by_status("pending")
+    assert [row.id for row in rows] == sorted([first, second]), "时间戳相同时按 id 升序"
+
+    await pin_created_at(db, second, "2025-01-01T00:00:00Z")
+    rows = await repo.list_by_status("pending")
+    assert [row.id for row in rows] == [second, first], "created_at 应当优先于 id"
 
 
 async def test_list_stale_status(db: Database, repo: ContentRepository, raw_content) -> None:

@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import os
 import plistlib
 import re
 import subprocess
@@ -42,6 +43,10 @@ def plist() -> dict:
 
 def test_script_exists_and_is_executable() -> None:
     assert SCRIPT.is_file()
+    if os.name == "nt":
+        # Windows 没有 Unix 可执行位（st_mode 恒为 0o666），这条断言无意义。
+        # 本脚本是 macOS 的 launchd 配置，Windows 上由 install_autostart.ps1 承担。
+        pytest.skip("Windows 没有 Unix 可执行位概念")
     assert SCRIPT.stat().st_mode & 0o111, "脚本没有可执行位"
 
 

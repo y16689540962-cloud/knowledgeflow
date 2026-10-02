@@ -35,7 +35,9 @@ def test_note_extension() -> None:
 
 def test_namespace_path() -> None:
     assert namespace_path() == "KnowledgeFlow"
-    assert namespace_path("Processed") == os.path.join("KnowledgeFlow", "Processed")
+    # 分隔符**固定是 ``/``**，不用 os.path.join —— 这是 vault 内的逻辑路径，
+    # 要进数据库 / 界面 / 双链，必须在所有平台上都是同一个字符串。
+    assert namespace_path("Processed") == "KnowledgeFlow/Processed"
 
 
 @pytest.mark.parametrize(
@@ -43,9 +45,7 @@ def test_namespace_path() -> None:
     [("inbox", "Inbox"), ("processed", "Processed"), ("failed", "Failed")],
 )
 def test_note_relative_path(kind: str, subdir: str) -> None:
-    assert note_relative_path(kind, "标题") == os.path.join(
-        "KnowledgeFlow", subdir, "标题.md"
-    )
+    assert note_relative_path(kind, "标题") == f"KnowledgeFlow/{subdir}/标题.md"
 
 
 def test_note_relative_path_does_not_double_extension() -> None:
@@ -59,9 +59,20 @@ def test_note_relative_path_unknown_kind() -> None:
 
 
 def test_with_filename_suffix() -> None:
-    assert with_filename_suffix("KnowledgeFlow/Processed/标题.md", "abc123") == os.path.join(
-        "KnowledgeFlow", "Processed", "标题-abc123.md"
+    assert (
+        with_filename_suffix("KnowledgeFlow/Processed/标题.md", "abc123")
+        == "KnowledgeFlow/Processed/标题-abc123.md"
     )
+
+
+def test_with_filename_suffix_normalizes_native_separators() -> None:
+    """调用方递本机风格的路径时也要归一成 ``/``，不能产出半半拉拉的混合路径。
+
+    Windows 上这条曾经会返回 ``KnowledgeFlow/Processed\\标题-abc.md``
+    —— ``os.path.split`` 认 ``\\`` 而 ``os.path.join`` 又补一个 ``\\``。
+    """
+    native = os.path.join("KnowledgeFlow", "Processed", "标题.md")
+    assert with_filename_suffix(native, "abc") == "KnowledgeFlow/Processed/标题-abc.md"
 
 
 def test_with_filename_suffix_without_directory() -> None:
@@ -95,7 +106,9 @@ def test_ensure_layout_does_not_create_extra_files(vault_root: Path) -> None:
     assert files == []
 
 
-def test_namespace_symlink_escape_is_blocked(tmp_path: Path) -> None:
+def test_namespace_symlink_escape_is_blocked(
+    tmp_path: Path, requires_symlinks: None
+) -> None:
     """KnowledgeFlow 若是个指向 vault 外部的软链，必须拒绝。"""
     vault = tmp_path / "vault"
     vault.mkdir()

@@ -62,12 +62,20 @@ from kf_app import wizard as kf_wizard  # noqa: E402
 # --------------------------------------------------------------------------- #
 @pytest.fixture(autouse=True)
 def sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """把 HOME 与「开发模式 runtime」都指到临时目录。
+    """把「家目录」与「开发模式 runtime」都指到临时目录。
 
     **没有这个夹具，测试会往真实家目录里写东西** —— 早期版本就这么干过。
+
+    ``USERPROFILE`` / ``LOCALAPPDATA`` 也必须一起指走：Windows 上
+    ``Path.home()`` **不认 ``HOME``**，只认 ``USERPROFILE``。只设 ``HOME`` 的话，
+    这些用例会把 ``~/Library/Application Support/KnowledgeFlow/`` 原样建到
+    用户真实家目录里（实测在 Windows 上跑一遍就留下 5 个目录 + settings.json +
+    两份日志）。POSIX 上这两个变量没人看，设了也无害 —— 所以无条件都设。
     """
     root = tmp_path_factory.mktemp("kf-sandbox")
     monkeypatch.setenv("HOME", str(root))
+    monkeypatch.setenv("USERPROFILE", str(root))
+    monkeypatch.setenv("LOCALAPPDATA", str(root / "AppData" / "Local"))
     monkeypatch.setenv("KF_DEV_RUNTIME", str(root / "dev-runtime"))
     monkeypatch.delenv("KF_SETUP_NONINTERACTIVE", raising=False)
     monkeypatch.delenv("KF_VAULT_PATH", raising=False)
@@ -152,8 +160,12 @@ def test_settings_roundtrip_and_file_permissions(tmp_path: Path) -> None:
     )
     kf_settings.save(paths, original)
 
-    mode = paths.settings_file.stat().st_mode & 0o777
-    assert mode == 0o600, f"settings.json 权限应是 0600（当前 {oct(mode)}）—— 里面有 API Key"
+    # 0600 是 POSIX 的权限模型。Windows 的 ``os.chmod`` 只能切「只读」位，
+    # 拿不到 ACL —— 那边的等价保护（icacls 收紧到仅当前用户）由
+    # tests/test_windows_packaging.py 单独验。
+    if os.name != "nt":
+        mode = paths.settings_file.stat().st_mode & 0o777
+        assert mode == 0o600, f"settings.json 权限应是 0600（当前 {oct(mode)}）—— 里面有 API Key"
 
     loaded = kf_settings.load(paths)
     assert loaded is not None
@@ -186,10 +198,15 @@ def test_env_uses_absolute_paths_for_database_and_media(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
     env = kf_settings.build_env(paths, kf_settings.Settings())
 
-    assert env["DATABASE_URL"].startswith("sqlite:////"), env["DATABASE_URL"]
+    # 断言「是绝对路径」而不是「以 sqlite://// 开头」：前者才是要守的性质。
+    # SQLAlchemy 的绝对路径在 POSIX 上是 ``sqlite:////Users/...``（四个斜杠），
+    # 在 Windows 上是 ``sqlite:///C:\\...``（三个）—— 钉死斜杠个数等于把
+    # 「绝对」这件事换成了「像不像 Unix」。
+    assert env["DATABASE_URL"].startswith("sqlite:///"), env["DATABASE_URL"]
     db_path = env["DATABASE_URL"].replace("sqlite:///", "")
     assert str(paths.database_file) in db_path
-    assert Path(db_path).is_absolute()
+    assert Path(db_path).is_absolute(), f"数据库路径必须是绝对路径：{db_path}"
+    assert "sqlite:///./" not in env["DATABASE_URL"], "不能留相对路径（cwd 一变就写错地方）"
 
     assert Path(env["DOWNLOAD_DIR"]).is_absolute()
     assert str(paths.data) in env["DOWNLOAD_DIR"]
@@ -221,6 +238,28 @@ def test_env_keeps_model_cache_inside_app_data(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
     env = kf_settings.build_env(paths, kf_settings.Settings())
     assert env["HF_HOME"] == str(paths.cache / "huggingface")
+
+
+def test_env_strips_inherited_python_variables(tmp_path: Path, monkeypatch) -> None:
+    """后端跑的是 .app 里那份 runtime，环境却是从用户 shell 继承来的 —— 两者不该混。
+
+    用户 shell 里设了 ``PYTHONPATH``，它就会插进**内嵌 runtime** 的 ``sys.path``，
+    而且路径上任何叫 ``sitecustomize.py`` 的文件都会被自动执行。这不是假想问题：
+    本项目的构建机上就带着一个 ``PYTHONPATH``（指向 IDE 的垫片），
+    它一度让 Windows 版创建构建工具 venv 的 ``ensurepip`` 退出 1 ——
+    报错只说「ensurepip 返回非零」，一个字都没提 ``PYTHONPATH``。
+    ``PYTHONHOME`` 更狠：它会把内嵌 runtime 的 ``prefix`` 整个改掉，连标准库都找不到。
+    用户级 site-packages 同理 —— 用户 profile 里恰好装过的包会遮蔽 .app 里那份。
+    """
+    leaky = ("PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP", "PYTHONEXECUTABLE")
+    for name in leaky:
+        monkeypatch.setenv(name, "/somewhere/leaky")
+
+    env = kf_settings.build_env(make_paths(tmp_path), kf_settings.Settings())
+
+    for name in leaky:
+        assert name not in env, f"{name} 不该被后端继承（会污染内嵌解释器）"
+    assert env["PYTHONNOUSERSITE"] == "1", "还要挡住用户级 site-packages"
 
 
 # --------------------------------------------------------------------------- #
@@ -299,6 +338,50 @@ def test_optional_capabilities_never_block_startup(tmp_path: Path) -> None:
     assert "Traceback" not in summary and "ModuleNotFound" not in summary
 
 
+def test_console_marks_fall_back_when_the_encoding_cannot_hold_them() -> None:
+    """``--check`` 的标记必须按**输出编码**挑，不能无脑用 ``✓``。
+
+    macOS 上 ``sys.stdout`` 一般是 UTF-8，但 ``LANG=C`` 的终端 / launchd 拉起的
+    进程会是 ``ascii`` —— 那时 ``print("✓ …")`` 抛 ``UnicodeEncodeError``，
+    把 ``--check`` 这条纯诊断命令变成一段 traceback。Windows 版栽过同一个坑
+    （中文 Windows 的 stdout 是 GBK），两个平台实现保持对齐。
+    """
+    assert kf_wizard.console_marks("utf-8") == ("✓", "✗")
+    assert kf_wizard.console_marks("ascii") == ("[OK]", "[--]")
+    assert kf_wizard.console_marks("gbk") == ("[OK]", "[--]")
+    # 编码名写错时按「装不下」处理，而不是抛 LookupError 把诊断命令打挂
+    assert kf_wizard.console_marks("no-such-codec") == ("[OK]", "[--]")
+
+
+def test_environment_summary_never_uses_marks_the_console_cannot_encode(
+    tmp_path: Path,
+) -> None:
+    """标记必须能编进当前控制台的编码。
+
+    中文正文本身装不下是**另一回事**（``LANG=C`` 的终端上属于既有边界，见
+    ``wizard.console_marks`` 的说明）。这里只钉住**标记**这一项：不能再出现
+    「一条纯诊断命令因为一个装饰性字符而 traceback」。
+    """
+    paths = make_paths(tmp_path)
+    kf_paths.ensure_layout(paths)
+    paths.runtime_python.parent.mkdir(parents=True, exist_ok=True)
+    paths.runtime_python.write_text("#!/bin/sh\n", encoding="utf-8")
+
+    class _AsciiStdout:
+        encoding = "ascii"
+        errors = "replace"
+
+    original = sys.stdout
+    sys.stdout = _AsciiStdout()  # type: ignore[assignment]
+    try:
+        summary = kf_wizard.environment_summary(paths)
+    finally:
+        sys.stdout = original
+
+    assert "✓" not in summary and "✗" not in summary, "装不下的标记必须降级"
+    assert "[OK]" in summary or "[--]" in summary, summary
+
+
 def test_missing_runtime_is_blocking(tmp_path: Path) -> None:
     paths = make_paths(tmp_path)
     kf_paths.ensure_layout(paths)
@@ -351,8 +434,12 @@ def test_service_start_never_exposes_lan(tmp_path: Path) -> None:
     assert "--expose" not in argv, "打包层不许把服务暴露到局域网"
     assert "--host" not in argv, "打包层不许改监听地址（默认就是回环）"
     assert "0.0.0.0" not in joined
-    assert argv[0].endswith("python3"), f"应当用内嵌解释器启动：{argv[0]}"
-    assert argv[1].endswith("scripts/serve.py"), f"应当复用现有后端入口：{argv[1]}"
+    # 用 Path 拆而不是 ``endswith("scripts/serve.py")``：后者在 Windows 上
+    # 会拿到 ``scripts\\serve.py``，断言的是分隔符而不是「复用了同一个入口」。
+    assert Path(argv[0]).name.startswith("python"), f"应当用内嵌解释器启动：{argv[0]}"
+    assert Path(argv[1]).parts[-2:] == ("scripts", "serve.py"), (
+        f"应当复用现有后端入口：{argv[1]}"
+    )
 
 
 def test_service_start_writes_state_and_uses_absolute_paths(tmp_path: Path) -> None:
@@ -370,42 +457,6 @@ def test_service_start_writes_state_and_uses_absolute_paths(tmp_path: Path) -> N
     assert state is not None and state["port"] == 8123
     kf_service.clear_state(paths)
     assert kf_service.read_state(paths) is None
-
-
-def test_health_probe_retries_before_concluding_nothing_runs(
-    monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """一次探活失败**不能**就断定「服务没在运行」。
-
-    机器忙时（比如同时在跑整个测试套件）单次 1.5 秒探活可能超时。早期实现只探一次，
-    于是会把自己的服务误判成「端口被别的程序占用」而拒绝启动 ——
-    端到端测试时过时不过就是这个原因。这里把「失败一次再成功」造出来。
-    """
-    calls = {"n": 0}
-    payload = {"version": "0.4.0", "llm_provider": "deepseek"}
-
-    def flaky(port: int, *, timeout: float = 0) -> dict | None:  # noqa: ARG001
-        calls["n"] += 1
-        return payload if calls["n"] >= 2 else None
-
-    monkeypatch.setattr(kf_service, "health", flaky)
-    monkeypatch.setattr(kf_service.time, "sleep", lambda _s: None)  # 测试里不用真等
-
-    assert kf_service.health_with_retry(12345) == payload
-    assert calls["n"] == 2, "应当重试一次后才拿到结果"
-
-
-def test_health_probe_gives_up_after_all_attempts(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls = {"n": 0}
-
-    def always_none(port: int, *, timeout: float = 0) -> None:  # noqa: ARG001
-        calls["n"] += 1
-        return None
-
-    monkeypatch.setattr(kf_service, "health", always_none)
-    monkeypatch.setattr(kf_service.time, "sleep", lambda _s: None)
-    assert kf_service.health_with_retry(12345) is None
-    assert calls["n"] == kf_service.PROBE_ATTEMPTS
 
 
 def test_health_probe_retries_before_concluding_nothing_runs(
@@ -554,6 +605,12 @@ def _launcher_env(fake_home: Path, vault: Path) -> dict[str, str]:
     env.update(
         {
             "HOME": str(fake_home),
+            # Windows 上 ``Path.home()`` 不认 HOME 只认 USERPROFILE —— 少了这两个，
+            # 启动器（哪怕只是 ``--check``）会把用户数据目录真的建到真实家目录里。
+            # 实测：在 Windows 上跑一遍套件，真实家目录会多出
+            # ``~/Library/Application Support/KnowledgeFlow/`` 5 个目录 + settings.json。
+            "USERPROFILE": str(fake_home),
+            "LOCALAPPDATA": str(fake_home / "AppData" / "Local"),
             "KF_SETUP_NONINTERACTIVE": "1",
             "KF_VAULT_PATH": str(vault),
             # 假 Key：非交互向导只校验 Vault，不发起真实模型调用
@@ -628,6 +685,17 @@ def _terminate(proc: subprocess.Popen[bytes]) -> None:
         proc.wait(timeout=10)
 
 
+#: macOS 启动器的**进程管理**是 POSIX 专属：``os.killpg`` / ``lsof`` / SIGTERM
+#: 在 Windows 上要么不存在（``os.killpg``）、要么语义不同（``terminate()`` 是
+#: TerminateProcess，收不到收尾逻辑）。这两条用例测的正是那部分，所以只在 POSIX 上跑。
+#: Windows 侧的对等场景（单实例、复用、收干净）由 tests/test_windows_packaging.py 覆盖。
+posix_only = pytest.mark.skipif(
+    os.name == "nt",
+    reason="macOS 启动器的进程管理依赖 os.killpg / lsof / POSIX 信号",
+)
+
+
+@posix_only
 def test_end_to_end_start_serve_ui_and_stop_cleanly(
     clean_machine: tuple[Path, Path]
 ) -> None:
@@ -710,6 +778,7 @@ def test_end_to_end_start_serve_ui_and_stop_cleanly(
         _terminate(again)
 
 
+@posix_only
 def test_sigterm_during_startup_leaves_no_orphan(
     clean_machine: tuple[Path, Path], tmp_path: Path
 ) -> None:

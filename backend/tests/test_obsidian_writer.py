@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import replace
 from pathlib import Path
 
@@ -15,6 +14,16 @@ from app.obsidian.writer import ObsidianWriter
 from app.obsidian.frontmatter import parse_frontmatter
 
 IDENTITY = ("manual", "hash:0123456789abcdef")
+
+#: vault 内的**逻辑**路径永远用 ``/``，与跑在哪个系统上无关。
+#:
+#: 这里刻意写**字面量**而不是 ``os.path.join``：后者在 Windows 上给出反斜杠，
+#: 于是「同一条笔记在 macOS 上叫 ``KnowledgeFlow/Processed/x.md``、在 Windows 上
+#: 叫 ``KnowledgeFlow\Processed\x.md``」—— 同一个内容两种身份。理由见
+#: ``app/obsidian/layout.py:namespace_path``，行为由 ``test_obsidian_layout.py`` 钉住。
+PROCESSED = f"{VAULT_NAMESPACE}/Processed"
+FAILED = f"{VAULT_NAMESPACE}/Failed"
+INBOX = f"{VAULT_NAMESPACE}/Inbox"
 
 
 def write(writer: ObsidianWriter, context: NoteContext, **kwargs):
@@ -31,9 +40,7 @@ def write(writer: ObsidianWriter, context: NoteContext, **kwargs):
 def test_write_creates_note_in_processed(obsidian_writer: ObsidianWriter, vault_root: Path, note_context) -> None:
     result = write(obsidian_writer, note_context)
     assert result.status == "created"
-    assert result.relative_path == os.path.join(
-        VAULT_NAMESPACE, "Processed", "人口下降之后，房子还会涨吗.md"
-    )
+    assert result.relative_path == f"{PROCESSED}/人口下降之后，房子还会涨吗.md"
     assert result.absolute_path.is_file()
     assert result.absolute_path.read_text(encoding="utf-8").startswith("---\n")
 
@@ -146,7 +153,7 @@ def test_write_markdown_requires_identity_for_disambiguation(
 ) -> None:
     """没有身份信息时不做消歧（调用方自己负责），但仍然不报错。"""
     obsidian_writer.ensure_layout()
-    rel = os.path.join(VAULT_NAMESPACE, "Processed", "x.md")
+    rel = f"{PROCESSED}/x.md"
     first = obsidian_writer.write_markdown(rel, "一")
     second = obsidian_writer.write_markdown(rel, "二")
     assert first.relative_path == second.relative_path
@@ -217,16 +224,12 @@ def test_failed_note_goes_to_failed_dir(obsidian_writer: ObsidianWriter, note_co
 
     note = render_failure_note(note_context, error_type="X", error_message="y")
     result = obsidian_writer.write_rendered(note, kind="failed", identity=IDENTITY)
-    assert result.relative_path == os.path.join(
-        VAULT_NAMESPACE, "Failed", "人口下降之后，房子还会涨吗.md"
-    )
+    assert result.relative_path == f"{FAILED}/人口下降之后，房子还会涨吗.md"
 
 
 def test_inbox_kind(obsidian_writer: ObsidianWriter, note_context) -> None:
     result = write(obsidian_writer, note_context, kind="inbox")
-    assert result.relative_path == os.path.join(
-        VAULT_NAMESPACE, "Inbox", "人口下降之后，房子还会涨吗.md"
-    )
+    assert result.relative_path == f"{INBOX}/人口下降之后，房子还会涨吗.md"
 
 
 @pytest.mark.parametrize("kind", ["inbox", "processed", "failed"])
@@ -249,7 +252,7 @@ def test_read_identity_returns_written_identity(obsidian_writer: ObsidianWriter,
 
 def test_read_identity_on_foreign_file(obsidian_writer: ObsidianWriter, vault_root: Path) -> None:
     obsidian_writer.ensure_layout()
-    rel = os.path.join(VAULT_NAMESPACE, "Processed", "foreign.md")
+    rel = f"{PROCESSED}/foreign.md"
     (vault_root / rel).write_text("没有 frontmatter 的文件\n", encoding="utf-8")
     assert obsidian_writer.read_identity(rel) is None
 

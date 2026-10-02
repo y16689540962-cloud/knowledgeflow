@@ -12,7 +12,6 @@ fixture → (Mock LLM) → Pydantic → Grounding Check → SQLite
 
 from __future__ import annotations
 
-import os
 from dataclasses import replace
 from pathlib import Path
 
@@ -135,8 +134,8 @@ async def test_a_line_from_fixture_to_vault(
 
     # 4) 断言：路径与目录
     assert written.status == "created"
-    assert written.relative_path == os.path.join(
-        VAULT_NAMESPACE, "Processed", "人口下降之后，房子还会涨吗.md"
+    assert written.relative_path == (
+        f"{VAULT_NAMESPACE}/Processed/人口下降之后，房子还会涨吗.md"
     )
     for subdir in SUBDIRS:
         assert (vault_root / VAULT_NAMESPACE / subdir).is_dir()

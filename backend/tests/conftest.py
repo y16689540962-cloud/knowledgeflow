@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -303,3 +304,47 @@ async def pipeline(
     pipeline_factory, valid_analysis_payload: dict
 ) -> ProcessingPipeline:
     return pipeline_factory(MockProvider(payload=valid_analysis_payload))
+
+
+# --------------------------------------------------------------------------- #
+# 平台能力：符号链接
+# --------------------------------------------------------------------------- #
+def symlink_problem(probe_dir: Path) -> str | None:
+    """本平台能不能用符号链接做「越界」验证。可用返回 ``None``，否则返回人话原因。
+
+    **为什么不能只 catch 异常**：Windows 上 ``symlink_to`` 往往不报错，
+    但建出来的条目 ``is_symlink()`` 是 ``False``（junction），
+    ``os.path.realpath`` 也不解引用它 —— 于是 ``ensure_within_vault``
+    的软链防线**失败开放**，用例会以「DID NOT RAISE」的形式失败。
+    那是平台能力差异，不是被测代码的缺陷，必须区分开：
+
+    * 建不出来        → 权限/开发者模式没开（``WinError 1314``）
+    * 建出来但不是软链 → 平台语义不同，realpath 不解引用
+    * 是软链但没解引用 → 同上，只是表现得更隐蔽
+
+    三种都跳过，并在 reason 里说清是哪一种 —— 不写清楚的话，
+    以后有人会以为这条守卫「跑过了」。
+    """
+    target = probe_dir / ".kf-symlink-probe-target"
+    link = probe_dir / ".kf-symlink-probe-link"
+    target.mkdir()
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+        return f"本平台不允许创建符号链接（{exc.__class__.__name__}：{exc}）"
+    if not link.is_symlink():
+        return (
+            "创建出来的条目不被识别为符号链接（Windows 上可能是 junction），"
+            "os.path.realpath 不会解引用它"
+        )
+    if Path(os.path.realpath(link)) != Path(os.path.realpath(target)):
+        return "os.path.realpath 未解引用这个符号链接"
+    return None
+
+
+@pytest.fixture
+def requires_symlinks(tmp_path: Path) -> None:
+    """声明「本用例需要真正可用的符号链接」，平台给不了就跳过。"""
+    reason = symlink_problem(tmp_path)
+    if reason is not None:
+        pytest.skip(f"符号链接在本平台不可用于越界验证：{reason}")

@@ -258,7 +258,11 @@ async def main(argv: list[str] | None = None) -> int:
         )
     print("=" * 108)
 
-    notes = sorted(path.relative_to(vault_root) for path in vault_root.rglob("*.md"))
+    # 一律打印 ``/`` 分隔（``as_posix()``）：这个脚本的输出是**验收口径**，
+    # 人要读、自动化要比对，不该因为跑在 Windows 上就换一套分隔符。
+    notes = sorted(
+        path.relative_to(vault_root).as_posix() for path in vault_root.rglob("*.md")
+    )
     print(f"\nVault 里的笔记（{len(notes)} 份；实体/主题不建空白笔记）：")
     for path in notes:
         print(f"  {path}")
