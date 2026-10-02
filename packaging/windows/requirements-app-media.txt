@@ -1,0 +1,19 @@
+# KnowledgeFlow 桌面版（Windows）· 可选能力（装失败只降级，不中断构建）
+#
+# 某个可选依赖打不进去，**不能让整个安装失败**。所以这一份单独装；
+# 失败时构建脚本会打印警告并继续，应用照常可用，
+# 界面里会如实显示「ASR / OCR 未启用」。
+
+# --- OCR ---
+# Python 侧只需要这两个；真正的识别引擎是**系统里的 tesseract**。
+# 用户没装 tesseract 时 OCR 自动降级（`is_available()` 返回 False），不报错。
+# Windows 上装它：https://github.com/UB-Mannheim/tesseract/wiki
+pillow>=10,<12.4
+pytesseract>=0.3,<1.0
+
+# --- ASR（本地语音转写）---
+# av 必须 <19：faster-whisper 调用 av.open(..., metadata_errors=...)，
+# 而 PyAV 19 删掉了这个关键字参数（faster-whisper 只声明 av>=11，没有上限）。
+# 实测 av 19.0.0 直接 TypeError，18.1.0 正常。这条约束与平台无关。
+faster-whisper>=1.0,<2.0
+av>=11,<19

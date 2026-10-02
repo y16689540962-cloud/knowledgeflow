@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import io
 import json
-import os
 from pathlib import Path
 
 import pytest
@@ -114,7 +113,10 @@ async def test_note_written_to_processed(pipeline, mixed_raw_content, vault_root
     notes = processed(vault_root)
     assert len(notes) == 1
     assert notes[0].name == "人口下降之后，房子还会涨吗.md"
-    assert result.note_path == os.path.join("KnowledgeFlow", "Processed", notes[0].name)
+    # vault 内的**逻辑**路径永远用 ``/``（与操作系统无关），所以这里写字面量
+    # 而不是 ``os.path.join`` —— 后者在 Windows 上给反斜杠，会让同一条笔记
+    # 在两个平台上「不同名」。理由见 app/obsidian/layout.py:namespace_path。
+    assert result.note_path == f"KnowledgeFlow/Processed/{notes[0].name}"
     body = notes[0].read_text(encoding="utf-8")
     assert "# 人口下降之后，房子还会涨吗" in body
     assert "[[中国]]" in body
@@ -321,9 +323,7 @@ async def test_failure_still_writes_failed_note(
     assert "## 处理失败" in body
     assert "LLM_INVALID_OUTPUT" in body
     assert "中国人口正在下降" in body  # 原文保住，方便人工重试
-    assert result.note_path and result.note_path.startswith(
-        os.path.join("KnowledgeFlow", "Failed")
-    )
+    assert result.note_path and result.note_path.startswith("KnowledgeFlow/Failed")
     assert processed(vault_root) == []
 
 

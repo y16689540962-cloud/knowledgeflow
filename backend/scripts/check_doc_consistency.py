@@ -79,16 +79,18 @@ STALE_PATTERNS: tuple[tuple[str, str], ...] = (
     ("1426 项用例", "Chrome 扩展落地时的中间合计"),
     ("1455 项用例", "扩展 URL 判定落地时的中间合计"),
     ("1465 项用例", "开源准备落地时的中间合计"),
-    ("1465 项用例", "开源准备落地时的中间合计"),
-    ("1455 项用例", "扩展 URL 判定落地时的中间合计"),
-    ("1465 项用例", "开源准备落地时的中间合计"),
-    ("1465 项用例", "开源准备落地时的中间合计"),
+    ("1466 项用例", "开源准备落地时的中间合计"),
     ("Phase 1–8 已完成", "Phase 9 已完成"),
 )
 
 #: 新口径必须出现在文档里。
+#:
+#: **这里刻意不钉「用例总数」这个数字。** 早先这里有一条 ``"1466"``，于是
+#: 文档每涨一次用例数，这条守卫就要手工跟着改一次 —— 而它真正想守的性质
+#: （「文档里印的合计 == 实际收集到的用例数」）**已经由 `check_arithmetic`
+#: 用活值核对了**，钉一个字面量只是让守卫多一个必然腐烂的副本。
+#: 事实只有一处：``pytest --collect-only`` 的输出。
 REQUIRED_IN_DOC: tuple[str, ...] = (
-    "1466",
     "demo_capabilities.py",
     "scripts/serve.py",
     "scripts/export_openapi.py",
@@ -116,7 +118,6 @@ REQUIRED_IN_DOC: tuple[str, ...] = (
     "--manual-text",
     "aweme/v1/web/aweme/detail",
     "detail_api_note",
-    "/api/ingest/douyin",
     "extract_first_url",
     "install_autostart.sh",
     "chrome-extension",

@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import os
+import posixpath
 from pathlib import Path
 from typing import Final, Literal
 
@@ -40,9 +41,16 @@ def note_kinds() -> tuple[str, ...]:
 
 
 def namespace_path(*parts: str) -> str:
-    """拼出 ``KnowledgeFlow/<...>`` 形式的**相对**路径（永远不含绝对路径）。"""
+    """拼出 ``KnowledgeFlow/<...>`` 形式的**相对**路径（永远不含绝对路径）。
+
+    分隔符**一律用 ``/``**，不用 ``os.sep``：这是 vault 内的**逻辑路径**，
+    不是本机文件系统路径 —— 它会进数据库、进界面、进 Obsidian 双链。
+    用 ``os.sep`` 会让同一条笔记在 macOS 上存成 ``KnowledgeFlow/Processed/x.md``、
+    在 Windows 上存成 ``KnowledgeFlow\\Processed\\x.md``，同一个内容两种身份。
+    （写入时照旧经 ``ensure_within_vault`` 转成本机绝对路径，两种分隔符都认。）
+    """
     cleaned = [part for part in parts if part]
-    return os.path.join(VAULT_NAMESPACE, *cleaned) if cleaned else VAULT_NAMESPACE
+    return posixpath.join(VAULT_NAMESPACE, *cleaned) if cleaned else VAULT_NAMESPACE
 
 
 def note_relative_path(kind: NoteKind, filename: str) -> str:
@@ -54,11 +62,18 @@ def note_relative_path(kind: NoteKind, filename: str) -> str:
 
 
 def with_filename_suffix(relative_path: str, suffix: str) -> str:
-    """给文件名加后缀（用于同名不同内容的消歧）。"""
-    directory, name = os.path.split(relative_path)
+    """给文件名加后缀（用于同名不同内容的消歧）。
+
+    入参可能是任一种分隔符（``note_relative_path`` 给的是 ``/``，但调用方
+    也可能递进本机风格路径），先归一到 ``/`` 再拆；**输出永远是 ``/``** ——
+    理由同 :func:`namespace_path`。不归一的话 Windows 上会产出
+    ``KnowledgeFlow/Processed\\标题-abc.md`` 这种半半拉拉的路径。
+    """
+    normalized = relative_path.replace(os.sep, "/") if os.sep != "/" else relative_path
+    directory, name = posixpath.split(normalized)
     stem = name[:-3] if name.endswith(NOTE_EXTENSION) else name
     new_name = f"{stem}-{suffix}{NOTE_EXTENSION}"
-    return os.path.join(directory, new_name) if directory else new_name
+    return posixpath.join(directory, new_name) if directory else new_name
 
 
 def ensure_layout(vault_root: str | os.PathLike[str]) -> tuple[Path, ...]:

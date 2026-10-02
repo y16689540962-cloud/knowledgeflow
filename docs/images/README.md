@@ -9,8 +9,8 @@ README 与 GitHub 社交卡片用的图。**全部使用虚构示例数据** —
 | `demo-douyin.gif` | README「演示」①：**真实抖音链路**——粘整段分享文案 → 采集 → 13 步（5.7 秒）|
 | `demo-web-ui.gif` | README「演示」②：填表 → 点击 → 13 步 → 出笔记（5.4 秒） |
 | `demo-douyin.mp4` · `demo-web-ui.mp4` | 上面两段的视频版（社媒用；GIF 在小红书会被当静态图）|
-| `web-ui-ingest.png` / `web-ui-library.png` | README「界面」段：Web 界面与内容库 |
-| `extension-popup.png` | README「界面」段：Chrome 扩展面板 |
+| `web-ui-ingest.png` / `web-ui-library.png` | README「截图」段：Web 界面与内容库 |
+| `extension-popup.png` | README「截图」段：Chrome 扩展面板 |
 | `social-preview.png` | **不**在 README 里。上传到仓库 Settings → Social preview（1280×640），决定分享到微信/飞书/X 时那张卡片的缩略图 |
 
 > 注意：这张是 **16:9 横版**，为 GitHub 社交卡而设计。要给小红书用（3:4 竖版）

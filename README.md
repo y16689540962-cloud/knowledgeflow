@@ -6,7 +6,7 @@
 ![coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
-![platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon-black)
+![platform](https://img.shields.io/badge/platform-macOS%20Apple%20Silicon%20%7C%20Windows%20x64-black)
 
 ![别让模型替你做判断 / Don't let the model do your thinking for you](docs/images/pipeline.png)
 
@@ -32,22 +32,37 @@ Obsidian 笔记：摘要 / 核心观点（分事实·观点·推论·预测）/ 
 > topics. Every claim carries a quote; anything without textual support is filed
 > separately instead of being blended into the summary. Two-track architecture
 > (a core pipeline that runs fully offline + a degradation-tolerant ingestion layer),
-> 1491 tests, 97% line coverage, a FastAPI backend, a zero-build web UI, and a Chrome
-> extension. **macOS Apple Silicon one-click installer** included.
+> 1593 tests, 97% line coverage, a FastAPI backend, a zero-build web UI, and a Chrome
+> extension. **One-click installers for macOS Apple Silicon and Windows 10+ x64** included.
 > Docs are in Chinese; code, tests and comments read either way. **Personal / research use only.**
 
 ---
 
-## macOS Apple Silicon（v0.4 一键安装版）
+## 桌面版一键安装（macOS Apple Silicon · Windows x64）
 
-> KnowledgeFlow currently provides a native installation package for Apple Silicon Macs.
+> KnowledgeFlow provides native installation packages for Apple Silicon Macs and
+> 64-bit Windows.
 >
-> Requirements: macOS 12+ · Apple Silicon · Obsidian · an LLM API key.
+> Requirements: macOS 12+ / Windows 10+ (x64) · Obsidian · an LLM API key.
 
-**不用装 Python、不用开终端、不用配环境变量。** 下载 DMG → 拖进 Applications → 双击 →
-向导问三件事（Vault / AI Key / 模型）→ 服务起来、浏览器自动打开。
+**不用装 Python、不用开终端、不用配环境变量。**
 
-### Installation
+| 平台 | 安装包 | 形态 |
+|---|---|---|
+| macOS Apple Silicon | `KnowledgeFlow-macOS-arm64.dmg` | 拖进 Applications |
+| Windows 10+ x64 | `KnowledgeFlow-<版本>-windows-x64.zip` | 解压即用（便携版） |
+
+两个包都是**自包含**的：内嵌一份 Python 运行时与全部依赖，解压/安装完直接能用，
+不需要目标机器上预先装任何东西（Windows 侧 OCR 引擎 `tesseract` 除外，它是可选项）。
+
+---
+
+### macOS Apple Silicon
+
+**下载 DMG → 拖进 Applications → 双击 → 向导问三件事（Vault / AI Key / 模型）→
+服务起来、浏览器自动打开。**
+
+#### Installation
 
 1. Download `KnowledgeFlow-macOS-arm64.dmg`（见 [Releases](../../releases)）
 2. Open the DMG
@@ -63,7 +78,7 @@ Developer ID 与公证（notarization）。**不要为此关闭系统安全功�
 
 这一步是 macOS 对未公证应用的标准流程，不是这个应用在要求你降低安全设置。
 
-### 它把东西放在哪
+#### 它把东西放在哪
 
 | 内容 | 位置 |
 |---|---|
@@ -76,7 +91,7 @@ Developer ID 与公证（notarization）。**不要为此关闭系统安全功�
 **用户数据绝不写在 `.app` 里面** —— 所以升级（替换 .app）不会动你的数据，
 删掉 .app 也不会连数据一起删。
 
-### 命令行（可选）
+#### 命令行（可选）
 
 应用本体就是一个可执行文件，需要时也能直接用：
 
@@ -87,7 +102,7 @@ Developer ID 与公证（notarization）。**不要为此关闭系统安全功�
 /Applications/KnowledgeFlow.app/Contents/MacOS/KnowledgeFlow --check    # 环境自检
 ```
 
-### 从源码构建 DMG
+#### 从源码构建 DMG
 
 ```bash
 ./scripts/build_macos_arm64.sh            # 产物：dist/KnowledgeFlow-macOS-arm64.dmg
@@ -101,20 +116,97 @@ Developer ID 与公证（notarization）。**不要为此关闭系统安全功�
 KF_PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple ./scripts/build_macos_arm64.sh
 ```
 
+---
+
+### Windows 10+ x64（便携版）
+
+**下载 ZIP → 解压到任意可写目录 → 双击 `KnowledgeFlow.exe` → 向导问三件事
+（Vault / AI Key / 模型）→ 服务起来、浏览器自动打开。**
+
+#### 安装
+
+1. 从 [Releases](../../releases) 下载 `KnowledgeFlow-<版本>-windows-x64.zip`
+2. 解压到**任意可写目录** —— 建议 `%LOCALAPPDATA%` 或「文档」下面，
+   **不要**放进 `C:\Program Files`（那里需要管理员权限，便携包不该要求提权）
+3. 双击 `KnowledgeFlow.exe`
+4. 走完首次运行向导
+
+首次运行可能被 SmartScreen 拦一下 —— 因为**这一版没有做代码签名**（没有证书就不要假装有）。
+**不要为此关闭系统安全功能**，正确做法是：
+
+- 点弹窗里的 **「更多信息」→「仍要运行」**；放行一次之后就不再提示了。
+
+#### 它把东西放在哪
+
+| 内容 | 位置 |
+|---|---|
+| 程序本体 | 你解压出来的那个目录（整个运行环境自包含） |
+| 你的配置（含 API Key，ACL 只授权当前用户） | `%LOCALAPPDATA%\KnowledgeFlow\config\settings.json` |
+| 数据库 | `%LOCALAPPDATA%\KnowledgeFlow\data\knowledgeflow.db` |
+| 日志 | `%LOCALAPPDATA%\KnowledgeFlow\logs\`（`app.log` / `launcher.log`） |
+| 模型缓存 | `%LOCALAPPDATA%\KnowledgeFlow\cache\` |
+
+**用户数据绝不写在解压目录里** —— 便携包会被拷到 U 盘、被挪走、被整个删掉重下一份；
+数据要是写在里面，「重新解压」就等于丢数据。所以升级/搬家都不动你的数据。
+
+配置文件的访问控制用 `icacls` 收成「仅当前用户可读写」，**并摘掉从上级目录继承来的
+`Users` / `Everyone` 权限** —— 否则同一台机器上别的账号能读到你的 API Key。
+
+#### 命令行（可选）
+
+双击入口是 `KnowledgeFlow.exe`（**无控制台窗口**）；命令行另给一份 `.cmd`，
+因为无窗口的 exe 里 `print()` 没有出口，而 `--status` / `--stop` / `--check` 本来就是给人看输出的：
+
+```bat
+KnowledgeFlow.cmd --status   :: 看状态
+KnowledgeFlow.cmd --stop     :: 停服务
+KnowledgeFlow.cmd --setup    :: 重跑向导
+KnowledgeFlow.cmd --check    :: 环境自检
+```
+
+#### 从源码构建 ZIP
+
+```powershell
+.\scripts\build_windows_x64.ps1            # 产物：dist\KnowledgeFlow-<版本>-windows-x64.zip
+.\scripts\build_windows_x64.ps1 -Minimal   # 不带 ASR/OCR，包更小
+.\scripts\build_windows_x64.ps1 -NoZip     # 只出目录，不打 ZIP
+.\scripts\build_windows_x64.ps1 -Clean     # 先清 build\ 再构建
+```
+
+需要 **Windows 10+ x64** 与 **PowerShell 5.1+**（`tar` / `curl` / `robocopy` 是系统自带的）。
+国内网络同样用镜像：
+
+```powershell
+$env:KF_PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
+.\scripts\build_windows_x64.ps1
+```
+
+> **这个脚本必须以 UTF-8 *带 BOM* 保存。** PowerShell 5.1 读 `.ps1` 时没有 BOM 就按系统
+> ANSI 码页解（中文机器上是 GBK），脚本里的中文注释会把后面的引号「吃掉」，
+> 报出来的是一堆莫名其妙的语法错误。原因和踩坑记录都写在脚本头部注释里。
+
+设计与审计（为什么这么打包、踩过哪些坑）：[`docs/v0.4-windows-packaging.md`](docs/v0.4-windows-packaging.md)。
+
+---
+
 ### 当前支持的平台
 
-**Current supported architecture: Apple Silicon / arm64。**
+**已打包：macOS Apple Silicon（arm64）· Windows 10+ x64。**
 
-**暂不支持：Intel Mac、Windows、Linux。** 这不是没时间做，是刻意不做 ——
-v0.4 的目标是把一个平台做到「装上就能用」，而不是三个平台都半成品。
-后端本身是跨平台的（纯 Python + FastAPI），要移植只需要补打包层。
+**暂不支持：Intel Mac、Windows on ARM（arm64）、Linux。** 这不是做不了 ——
+后端是纯 Python + FastAPI，本身跨平台，缺的只是各自的打包层。
+是刻意先不铺开：每多一个平台，就多一份要长期维护、要真机验证的构建产物，
+半成品比没有更糟。
+
+要加一个平台，照着 `packaging/macos/` 或 `packaging/windows/` 补一层就行，
+**业务代码一行都不用动** —— 打包层只做「内嵌解释器 + 环境变量映射 + 启动」。
 
 ### 能力边界（会如实显示在界面上）
 
 | 能力 | 需要什么 | 缺了会怎样 |
 |---|---|---|
 | 链接 / 文本 → Obsidian | 只要一个 LLM API Key | — |
-| ASR（本地语音转写） | 已随 .app 内置（faster-whisper） | 首次使用需联网下载模型 |
+| ASR（本地语音转写） | 已随包内置（faster-whisper） | 首次使用需联网下载模型 |
 | OCR（图片文字识别） | 需要系统装 `tesseract` | **自动停用**，其它功能不受影响 |
 | 抖音采集 | 你自己的抖音登录态（可选配置） | 用「手动粘贴」照常可用 |
 
@@ -154,8 +246,6 @@ KnowledgeFlow 的做法是：**把「模型说了什么」和「规则认了什�
 | **Chrome 扩展** | 打开抖音视频页 → 点工具栏图标 | 日常剪藏 |
 | **Web 界面** | `http://127.0.0.1:8000` 手动粘贴 / 抖音链接 | 不用装扩展 |
 | **HTTP API** | `POST /api/ingest/{manual,douyin,media}` | 脚本 / 自动化 |
-
-### 界面
 
 ### 演示（各 6 秒）
 
@@ -202,7 +292,7 @@ KnowledgeFlow 的做法是：**把「模型说了什么」和「规则认了什�
 ### 0. 前置
 
 - **Python 3.11+**（开发环境是 3.13）
-- macOS / Linux（Windows 未验证）
+- macOS / Linux / Windows（Windows 已随 v0.4 一起打包并真机验证，见上文）
 - 一个 LLM API Key（OpenAI 兼容即可，实测用的是 **DeepSeek**）
 - 一个 **Obsidian 库**（笔记最终写到那里）
 
@@ -213,6 +303,8 @@ git clone <this-repo> && cd knowledgeflow
 python3 -m venv .venv
 .venv/bin/pip install -r backend/requirements.txt
 ```
+
+> Windows 上把 `.venv/bin/` 换成 `.venv\Scripts\`（下文所有命令同理）。
 
 > `requirements.txt` 里 ASR（faster-whisper）与 OCR（pytesseract）是**可选能力**：
 > 装不上或没装引擎不会阻塞主链路，代码里全是懒加载 + 明确降级。
@@ -242,11 +334,23 @@ $EDITOR backend/.env
 cd backend && ../.venv/bin/python -m pytest
 ```
 
-期望：**1491 passed / 16 skipped**。16 条 skip 是设计如此：
+期望：**全绿**。本仓库当前共 **1593** 项用例（Windows x64 上实测 1572 passed / 22 skipped），
+默认会跳过一批，都是设计如此：
 
-- 4 条真实 ASR / OCR（需要装引擎，首次还要联网下模型）
-- 2 条真实浏览器端到端（需要 Playwright + Chrome）
-- 10 条内部进度文档的口径守卫（那份文档不随开源仓库发布）
+- **4 条**真实 ASR / OCR（需要装引擎，首次还要联网下模型）
+- **真实浏览器端到端**（需要 Playwright + Chrome）
+- **8 条**内部进度文档的口径守卫（那份文档不随开源仓库发布）
+- **平台 / 环境专属的用例**：两个平台的打包层里依赖本平台系统调用的那些
+  （Windows 的进程 / 端口管理、macOS 的 `os.killpg` / `lsof`、Unix 可执行位），
+  符号链接越界用例（Windows 上普通用户建不出真符号链接），
+  以及要 `node` 才能做的 JS 语法 / 行为校验
+
+所以**跳过的条数随平台和已装的可选依赖而变**，别拿一个固定数字去对 ——
+上面那个 `1572 / 22` 只是 Windows x64 上的一次实测。
+
+> 小注：`1572 + 22 = 1594` 比 1593 多 1。不是数错了 —— 没装 playwright 时
+> `test_web_ui_browser.py` 在**收集期整模块跳过**，pytest 会为它单独记一条 skip，
+> 而它不在「收集到的 1593 项」里。
 
 想跑真实引擎 / 浏览器：
 
@@ -362,7 +466,9 @@ backend/
     db/            SQLAlchemy async（SQLite）
     web/           零构建静态界面
   scripts/         一致的验收脚本 + 三个质量守卫
-  tests/           1491 项，全程离线
+  tests/           1593 项，全程离线
+packaging/macos/   macOS 启动器 + Info.plist + 应用依赖
+packaging/windows/ Windows 启动器（kf_app）+ PyInstaller 入口 + 应用依赖
 extension/         Chrome MV3 扩展
 ```
 
@@ -386,7 +492,7 @@ extension/         Chrome MV3 扩展
 
 | 指标 | 数值 |
 |---|---|
-| 用例 | 1491 passed / 16 skipped（共 1507） |
+| 用例 | **1593** 项，默认全绿（跳过的按平台与已装可选依赖而变，见「跑测试」） |
 | 行覆盖率 | **97.0%**（`scripts/check_coverage.py` 有 90% 下限守卫） |
 | 运行网络依赖 | **零** —— 全部用 `httpx.MockTransport` / Mock LLM |
 | 真实联网验证 | 抖音采集、DeepSeek 分析、ASR、OCR、浏览器端到端都真跑过 |
@@ -409,6 +515,11 @@ extension/         Chrome MV3 扩展
 - 旧版本算的 `content_hash`（v1）与 v2 并存时，同一条内容可能落到两行 —— 提供迁移脚本。
 - 本地媒体文件没有天然唯一 id → 走 `hash:` 兜底并标记需人工复核（设计如此）。
 - 服务无鉴权，只应绑回环地址。
+- **Windows 包没有代码签名**，首次运行会被 SmartScreen 拦一下。这是刻意的 ——
+  没有证书就不假装有，正确放行方式见上文 Windows 安装一节。
+- **Windows 包是便携版，不写注册表、不装系统服务、不建开始菜单项、没有开机自启**：
+  动的东西只有它自己的目录和 `%LOCALAPPDATA%\KnowledgeFlow\`。删掉解压出来的目录就等于卸载
+  （删之前先跑一次 `KnowledgeFlow.cmd --stop`）。
 
 ## 安全与隐私
 

@@ -1,142 +1,224 @@
-"""首次启动向导 —— 用 macOS 原生的 ``osascript`` 弹窗，不引入 GUI 依赖。
+"""首次启动向导 —— 用 Python 自带的 ``tkinter`` 弹窗，不引入第三方 GUI 依赖。
 
-为什么用 osascript 而不是做个 Cocoa/Tauri 界面：
+为什么用 tkinter 而不是 WPF / WinForms / Electron：
 
-* v0.4 的目标是「装上就能用」，**不是**做一个漂亮的安装器界面（定稿第二十五节：
-  先能安装 → 再能启动 → 再能配置 → 再能第一次成功使用 → 最后优化体验）。
-* 本机只有 CommandLineTools、没有 Xcode，写个真 Cocoa 应用会引入一堆构建依赖。
-* ``choose folder`` / ``display dialog`` 就是系统原生控件，用户看到的是 macOS
-  自己的文件夹选择器 —— 这比自绘的更像「正规软件」。
+* 目标是「装上就能用」，**不是**做一个漂亮的安装器界面
+  （先能安装 → 再能启动 → 再能配置 → 再能第一次成功使用 → 最后优化体验）。
+* ``tkinter`` 随 Python 一起来，**零额外依赖、零额外体积**；文件夹选择器
+  用的是系统原生控件，观感上不比自绘的差。
+* 对比 macOS 版用 ``osascript``：那边是为了「不引入 GUI 依赖」才借系统脚本，
+  Windows 上 tkinter 本身就是标准库，没必要再绕一层 PowerShell/WinForms。
 
-**绝不把 traceback 给用户**（定稿第八节）：所有失败都翻译成
-「XX 未检测到 / 请检查 YY」这种句子，外加日志路径。
+**绝不把 traceback 给用户**：所有失败都翻译成「XX 未检测到 / 请检查 YY」这种句子，
+外加日志路径。
 """
 
 from __future__ import annotations
 
+import functools
 import os
 import shutil
-import subprocess
 import sys
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
-from kf_app.paths import AppPaths, is_macos_apple_silicon, macos_version, MIN_MACOS_VERSION
+from kf_app.paths import (
+    MIN_WINDOWS_VERSION,
+    AppPaths,
+    is_windows_x64,
+    windows_version,
+)
 from kf_app.settings import KNOWN_BASE_URLS, PROVIDER_LABELS, Settings, probe_llm, probe_vault
 
 APP_TITLE = "KnowledgeFlow"
-#: osascript 弹窗超时：用户走开时会挂着，给个上限免得永远等。
-OSASCRIPT_TIMEOUT_SECONDS = 600.0
 
 
 # --------------------------------------------------------------------------- #
-# osascript 封装
+# tkinter 封装
 # --------------------------------------------------------------------------- #
 class DialogUnavailable(RuntimeError):
-    """没有图形界面 / 用户取消 / osascript 不可用。"""
+    """没有图形界面 / 用户取消 / tkinter 不可用。"""
 
 
-def _run_osascript(script: str, *args: str) -> str:
-    if shutil.which("osascript") is None:
-        raise DialogUnavailable("这台机器上找不到 osascript")
-    result = subprocess.run(
-        ["osascript", "-e", script, *args],
-        capture_output=True,
-        text=True,
-        timeout=OSASCRIPT_TIMEOUT_SECONDS,
-        check=False,
-    )
-    if result.returncode != 0:
-        # osascript 在用户点「取消」时返回 -128
-        raise DialogUnavailable(result.stderr.strip() or "用户取消了操作")
-    return result.stdout.strip()
+_ROOT: Any = None
+_GUI_STATE: bool | None = None
+
+
+def _probe_gui() -> bool:
+    """真的能建出一个 Tk 吗。**不能只看 import 成不成功** ——
+
+    ``_tkinter`` 在部分精简运行环境里能 import，但 ``Tk()`` 会抛
+    ``TclError: Can't find a usable init.tcl``；无图形会话（Windows Server Core、
+    某些 CI）上也会失败。探测必须落到「建得出来」这一步。
+    """
+    try:
+        import tkinter
+    except ImportError:
+        return False
+    try:
+        probe = tkinter.Tk()
+        probe.withdraw()
+        probe.destroy()
+    except Exception:  # noqa: BLE001 - tkinter 抛的是 TclError，各版本类型不一
+        return False
+    return True
+
+
+def gui_available() -> bool:
+    """能不能弹窗。结果缓存 —— 探测本身要建一次 Tk，不该每次问都建。"""
+    global _GUI_STATE
+    if _GUI_STATE is None:
+        _GUI_STATE = _probe_gui()
+    return _GUI_STATE
+
+
+def _root() -> Any:
+    """取（并按需创建）常驻的隐藏根窗口。"""
+    global _ROOT
+    if _ROOT is not None:
+        return _ROOT
+    if not gui_available():
+        raise DialogUnavailable("这台机器上没有可用的图形界面（tkinter 起不来）")
+    import tkinter
+
+    root = tkinter.Tk()
+    root.withdraw()
+    root.title(APP_TITLE)
+    _ROOT = root
+    return root
+
+
+def _center(dialog: Any, root: Any) -> None:
+    """把对话框摆到屏幕中央。tkinter 默认左上角，看着像野窗口。"""
+    dialog.update_idletasks()
+    width = dialog.winfo_width()
+    height = dialog.winfo_height()
+    x = max(0, (dialog.winfo_screenwidth() - width) // 2)
+    y = max(0, (dialog.winfo_screenheight() - height) // 3)
+    dialog.geometry(f"+{x}+{y}")
 
 
 def say(text: str, *, title: str = APP_TITLE) -> None:
     """只显示一段话。"""
-    _run_osascript(f'display dialog {_q(text)} with title {_q(title)} buttons {{"继续"}} default button 1')
+    from tkinter import messagebox
+
+    messagebox.showinfo(title, text, parent=_root())
 
 
 def ask(text: str, *, default: str = "", title: str = APP_TITLE, hidden: bool = False) -> str:
     """要一个文本输入。``hidden=True`` 用于 API Key。"""
-    hidden_clause = " with hidden answer" if hidden else ""
-    script = (
-        f'display dialog {_q(text)} with title {_q(title)} '
-        f'default answer {_q(default)}{hidden_clause} buttons {{"取消", "确定"}} default button 2'
+    from tkinter import simpledialog
+
+    answer = simpledialog.askstring(
+        title,
+        text,
+        initialvalue=default,
+        show="*" if hidden else None,
+        parent=_root(),
     )
-    out = _run_osascript(script)
-    # 输出形如 "button returned:确定, text returned:xxx"
-    for chunk in out.split(", "):
-        if chunk.startswith("text returned:"):
-            return chunk[len("text returned:"):]
-    return ""
+    if answer is None:
+        raise DialogUnavailable("用户取消了输入")
+    return answer
 
 
 def pick_folder(prompt: str, *, title: str = APP_TITLE) -> str:
-    """系统文件夹选择器 —— 用户看到的是 macOS 原生控件。"""
-    out = _run_osascript(
-        f'POSIX path of (choose folder with prompt {_q(prompt)} with title {_q(title)})'
-    )
-    return out.rstrip("/")
+    """系统文件夹选择器 —— 用户看到的是 Windows 原生控件。"""
+    from tkinter import filedialog
+
+    chosen = filedialog.askdirectory(title=f"{title} · {prompt}", mustexist=True, parent=_root())
+    if not chosen:
+        raise DialogUnavailable("用户取消了选择")
+    return str(Path(chosen))
 
 
 def choose(text: str, options: list[str], *, title: str = APP_TITLE, default: int = 1) -> str:
-    """单选。用户点「取消」会抛 ``DialogUnavailable``。"""
-    buttons = ", ".join(_q(o) for o in options)
-    script = (
-        f'display dialog {_q(text)} with title {_q(title)} '
-        f'buttons {{{buttons}}} default button {default}'
-    )
-    out = _run_osascript(script)
-    return out.split(":")[-1]
+    """单选。用户点「取消」/ 关窗口会抛 ``DialogUnavailable``。
 
+    ``messagebox`` 只支持固定几种按钮组合，做不到「三个自定义选项」，
+    所以这里自己搭一个 Toplevel —— 但只用标准控件，不引入任何依赖。
+    """
+    import tkinter
 
-def _q(value: str) -> str:
-    """把字符串安全地塞进 AppleScript 字符串字面量。"""
-    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    root = _root()
+    picked: dict[str, str] = {}
+
+    dialog = tkinter.Toplevel(root)
+    dialog.title(title)
+    dialog.resizable(False, False)
+    dialog.attributes("-topmost", True)
+
+    tkinter.Label(
+        dialog, text=text, justify="left", wraplength=460, padx=18, pady=14
+    ).pack()
+
+    row = tkinter.Frame(dialog, padx=14, pady=(0, 14))
+    row.pack()
+
+    def pick(value: str) -> None:
+        picked["value"] = value
+        dialog.destroy()
+
+    for index, option in enumerate(options, start=1):
+        button = tkinter.Button(row, text=option, width=18, command=lambda o=option: pick(o))
+        button.pack(side="left", padx=4)
+        if index == default:
+            button.focus_set()
+            dialog.bind("<Return>", lambda _event, o=option: pick(o))
+
+    dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)  # 关窗口 = 取消
+    _center(dialog, root)
+    dialog.wait_window()
+
+    if not picked.get("value"):
+        raise DialogUnavailable("用户取消了操作")
+    return picked["value"]
 
 
 # --------------------------------------------------------------------------- #
-# 环境检查（定稿第八节的 Step 1）
+# 环境检查
 # --------------------------------------------------------------------------- #
 def check_environment(paths: AppPaths) -> list[tuple[str, bool, str]]:
     """返回 ``[(检查项, 通过?, 人话说明)]``。**缺东西不等于失败**，只是如实列出。"""
     checks: list[tuple[str, bool, str]] = []
 
-    silicon = is_macos_apple_silicon()
-    checks.append(
-        (
-            "Apple Silicon",
-            silicon,
-            "已确认" if silicon else "这台机器不是 Apple Silicon —— v0.4 的安装包只支持 arm64",
-        )
-    )
-
-    version = macos_version()
+    version = windows_version()
     if version is None:
-        checks.append(("macOS 版本", False, "无法识别系统版本"))
+        checks.append(("Windows 版本", False, "无法识别系统版本（不是 Windows？）"))
     else:
-        ok = version >= MIN_MACOS_VERSION
+        ok = (version[0], version[1]) >= MIN_WINDOWS_VERSION
+        label = f"Windows {version[0]}.{version[1]}（build {version[2]}）"
         checks.append(
             (
-                f"macOS {version[0]}.{version[1]}",
+                label,
                 ok,
-                "满足最低要求" if ok else f"需要 macOS {MIN_MACOS_VERSION[0]}.{MIN_MACOS_VERSION[1]} 或更高",
+                "满足最低要求"
+                if ok
+                else f"需要 Windows {MIN_WINDOWS_VERSION[0]} 或更高",
             )
         )
+
+    x64 = is_windows_x64()
+    checks.append(
+        (
+            "64 位（x64）",
+            x64,
+            "已确认" if x64 else "这个安装包只支持 64 位 Windows",
+        )
+    )
 
     runtime = paths.runtime_python
     checks.append(
         (
             "内置运行环境",
             runtime.is_file(),
-            "已就绪" if runtime.is_file() else f"缺少 {runtime} —— 这个安装包可能不完整，请重新下载",
+            "已就绪" if runtime.is_file() else f"缺少 {runtime} —— 这个包可能不完整，请重新解压",
         )
     )
 
     backend = paths.backend / "scripts" / "serve.py"
     checks.append(
-        ("后端程序", backend.is_file(), "已就绪" if backend.is_file() else "安装包内缺少后端文件，请重新下载")
+        ("后端程序", backend.is_file(), "已就绪" if backend.is_file() else "包内缺少后端文件，请重新解压")
     )
 
     checks.append(("SQLite", True, "Python 内置，无需额外安装"))
@@ -158,9 +240,9 @@ def check_environment(paths: AppPaths) -> list[tuple[str, bool, str]]:
 
 
 # --------------------------------------------------------------------------- #
-# 输出编码：不是每个控制台都装得下 ✓ / ✗
+# 输出编码：GBK 控制台装不下 ✓ / ✗
 # --------------------------------------------------------------------------- #
-#: 好看的标记。UTF-8 控制台、日志文件、osascript 弹窗都能显示
+#: 好看的标记。UTF-8 控制台、日志文件、tkinter 对话框都能显示
 _MARKS_UNICODE = ("✓", "✗")
 #: 降级标记。GBK / cp1252 这类码页里没有 U+2713，只能退回纯 ASCII
 _MARKS_ASCII = ("[OK]", "[--]")
@@ -169,14 +251,15 @@ _MARKS_ASCII = ("[OK]", "[--]")
 def console_marks(encoding: str | None = None) -> tuple[str, str]:
     """挑一组**当前输出编码装得下**的标记，返回 ``(通过, 未通过)``。
 
-    macOS 上 ``sys.stdout`` 一般是 UTF-8，但 ``LANG=C`` 的终端 / launchd 拉起的
-    进程可能是 ``ascii`` —— 那时 ``print("✓ …")`` 抛 ``UnicodeEncodeError``，
-    把 ``--check`` 这条**纯诊断**命令变成一段 traceback。Windows 版栽过同一个
-    坑（中文 Windows 的 stdout 是 GBK，且 ``PYTHONIOENCODING`` 无效），
-    两个平台的实现保持对齐。
+    ``✓``（U+2713）不在 GBK 码表里，而中文 Windows 的 stdout 就是 GBK ——
+    于是 ``print("✓ …")`` 抛 ``UnicodeEncodeError``，把 ``--check`` 这条
+    **纯诊断**命令变成一段 traceback：退出码 1、stdout 一个字节都没有，
+    用户拿到的唯一线索是 ``'gbk' codec can't encode character '\\u2713'``。
+    诊断信息宁可显示成 ``[OK]``，也不能以 traceback 收场。
 
-    **只负责标记，不负责正文**：真到了 ``ascii`` 控制台，中文正文同样装不下，
-    那是另一件事（属于既有边界，不在这里假装解决）。
+    ``encoding`` 留空时读 ``sys.stdout``。**注意冻结后的 exe 里
+    ``PYTHONIOENCODING`` 是无效的**（PyInstaller 会按 ANSI 码页重开 std 句柄），
+    所以这里只能看 ``sys.stdout.encoding``，不能假设它是 UTF-8。
     """
     if encoding is None:
         encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
@@ -204,7 +287,7 @@ def environment_summary(paths: AppPaths) -> str:
 def blocking_problems(paths: AppPaths) -> list[str]:
     """真正会**阻止启动**的问题（可选能力缺失不算）。
 
-    这里刻意用白名单式判断：只有「内置运行环境 / 后端程序」缺失才阻止启动，
+    白名单式判断：只有「内置运行环境 / 后端程序」缺失、或系统版本过低才阻止启动，
     其余（OCR、tesseract、抖音登录态…）一律降级运行。
     """
     problems: list[str] = []
@@ -212,9 +295,9 @@ def blocking_problems(paths: AppPaths) -> list[str]:
         problems.append("内置运行环境缺失")
     if not (paths.backend / "scripts" / "serve.py").is_file():
         problems.append("后端程序缺失")
-    runtime_version = macos_version()
-    if runtime_version is not None and runtime_version < MIN_MACOS_VERSION:
-        problems.append(f"macOS 版本过低（需要 {MIN_MACOS_VERSION[0]}.{MIN_MACOS_VERSION[1]}+）")
+    version = windows_version()
+    if version is not None and (version[0], version[1]) < MIN_WINDOWS_VERSION:
+        problems.append(f"Windows 版本过低（需要 {MIN_WINDOWS_VERSION[0]}+）")
     return problems
 
 
@@ -242,13 +325,14 @@ def run_wizard(paths: AppPaths, current: Settings | None = None) -> Settings | N
     """
     settings = current or Settings()
 
-    if noninteractive():
+    if noninteractive() or not gui_available():
         return _wizard_from_env(paths, settings)
 
     try:
         return _wizard_interactive(paths, settings)
     except DialogUnavailable:
-        # 没有图形界面（例如 ssh / CI）：退回环境变量，并把说明写进日志
+        # 图形界面中途不可用（用户取消、Tk 崩了）：若环境变量齐全就退回非交互，
+        # 否则如实返回「没配成」。
         if any(os.environ.get(k) for k in (ENV_VAULT, ENV_API_KEY)):
             return _wizard_from_env(paths, settings)
         return None
@@ -284,16 +368,14 @@ def _wizard_interactive(paths: AppPaths, settings: Settings) -> Settings | None:
     # ---- Step 0：环境检查 ----
     problems = blocking_problems(paths)
     if problems:
-        say("无法继续：\n\n" + "\n".join(f"· {p}" for p in problems) + "\n\n请重新下载安装包。")
+        say("无法继续：\n\n" + "\n".join(f"· {p}" for p in problems) + "\n\n请重新解压安装包。")
         return None
 
     # ---- Step 1：Obsidian Vault ----
     while True:
         vault = settings.obsidian_vault_path
         if vault:
-            keep = choose(
-                f"当前 Vault：\n{vault}\n\n要改吗？", ["就用这个", "重新选择"], default=1
-            )
+            keep = choose(f"当前 Vault：\n{vault}\n\n要改吗？", ["就用这个", "重新选择"], default=1)
             if keep != "重新选择":
                 ok, message = probe_vault(vault)
                 if ok:
@@ -316,10 +398,12 @@ def _wizard_interactive(paths: AppPaths, settings: Settings) -> Settings | None:
         )
         provider = "deepseek" if provider_label == "DeepSeek" else "openai"
 
-        default_model = settings.llm_model if settings.llm_provider == provider else (
-            "deepseek-flash" if provider == "deepseek" else ""
+        default_model = (
+            settings.llm_model
+            if settings.llm_provider == provider
+            else ("deepseek-flash" if provider == "deepseek" else "")
         )
-        model = ask(f"模型名（例如 deepseek-flash）：", default=default_model)
+        model = ask("模型名（例如 deepseek-flash）：", default=default_model)
         if not model.strip():
             continue
 
@@ -359,6 +443,42 @@ def _wizard_interactive(paths: AppPaths, settings: Settings) -> Settings | None:
         "配置完成。\n\n"
         f"Vault：{settings.obsidian_vault_path}\n"
         f"AI：{PROVIDER_LABELS.get(settings.llm_provider, settings.llm_provider)} / {settings.llm_model}\n\n"
-        "点「继续」后会自动启动服务并打开界面。"
+        "点「确定」后会自动启动服务并打开界面。"
     )
     return settings
+
+
+def destroy_root() -> None:
+    """收掉常驻的隐藏根窗口。退出前调用，免得进程挂着一个看不见的 Tk。"""
+    global _ROOT
+    if _ROOT is None:
+        return
+    try:
+        _ROOT.destroy()
+    except Exception:  # noqa: BLE001 - 关窗口失败不该影响退出
+        pass
+    _ROOT = None
+
+
+__all__ = [
+    "APP_TITLE",
+    "DialogUnavailable",
+    "ENV_API_KEY",
+    "ENV_BASE_URL",
+    "ENV_MODEL",
+    "ENV_PROVIDER",
+    "ENV_VAULT",
+    "NONINTERACTIVE_FLAG",
+    "ask",
+    "blocking_problems",
+    "check_environment",
+    "choose",
+    "console_marks",
+    "destroy_root",
+    "environment_summary",
+    "gui_available",
+    "noninteractive",
+    "pick_folder",
+    "run_wizard",
+    "say",
+]

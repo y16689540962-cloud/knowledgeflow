@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -80,8 +81,9 @@ async def test_fetch_builds_raw_content_with_media_path(tmp_path: Path) -> None:
 async def test_fetch_expands_home_dir(tmp_path: Path, monkeypatch) -> None:
     """``~`` 开头的路径要展开 —— 这是用户最自然的写法。"""
     (tmp_path / "clip.mp4").write_bytes(b"\x00\x00\x00\x20ftypisom" + b"\x00" * 8)
-    # expanduser 走的是 os.environ["HOME"]，不是 Path.home()
-    monkeypatch.setenv("HOME", str(tmp_path))
+    # expanduser 认的环境变量**按平台不同**：POSIX 看 HOME，Windows 看 USERPROFILE。
+    # 只设 HOME 的话，Windows 上会展开到真实用户目录 → 找不到 clip.mp4 → 假失败。
+    monkeypatch.setenv("USERPROFILE" if os.name == "nt" else "HOME", str(tmp_path))
 
     raw = await LocalMediaSource().fetch(LocalMediaPayload(file_path="~/clip.mp4"))
     assert raw.media_type == "video"
