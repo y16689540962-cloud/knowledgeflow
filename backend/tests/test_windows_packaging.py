@@ -49,6 +49,7 @@ REPO_ROOT = BACKEND_ROOT.parent
 WIN_PKG = REPO_ROOT / "packaging" / "windows"
 LAUNCHER_DIR = WIN_PKG / "launcher"
 BUILD_SCRIPT = REPO_ROOT / "scripts" / "build_windows_x64.ps1"
+ACCEPT_SCRIPT = REPO_ROOT / "scripts" / "accept_windows_x64.py"
 
 pytestmark = pytest.mark.skipif(
     not LAUNCHER_DIR.is_dir(),
@@ -1444,6 +1445,99 @@ def test_build_script_smoke_test_isolates_the_user_data_dir() -> None:
     assert "LOCALAPPDATA" in source
     assert "smoke-home" in source
     assert "finally" in source, "临时 LOCALAPPDATA 必须在 finally 里恢复"
+
+
+def _cmd_entry_region() -> str:
+    """只取构建脚本里生成 ``KnowledgeFlow.cmd`` 的那一小段（已剥注释）。
+
+    从 ``$CmdPath`` 一直到 ``Set-Content`` **那一行结束** —— 必须含这一行：
+    ``-join "`r`n"`` 就写在上面，只取到行首会把要断言的东西切掉。
+    """
+    body = strip_ps_comments(read_build_script())
+    start = body.index("$CmdPath")
+    set_content = body.index("Set-Content", start)
+    end = body.index("\n", set_content)
+    assert start < set_content < end, "构建脚本里 .cmd 的生成段落结构变了"
+    return body[start:end]
+
+
+def test_build_script_writes_the_cmd_with_crlf() -> None:
+    """生成的 ``KnowledgeFlow.cmd`` 必须是 **CRLF** 行尾，而且要显式拼。
+
+    cmd.exe **不认 LF-only 的批处理**：它把注释行按错误的边界切开，把 ``rem``
+    后面的片段当命令去执行。实测（同一份内容，只换行尾）：
+
+    * LF   → 用户每次跑 .cmd 都多看到三行「'-status' 不是内部或外部命令」这类噪音
+    * CRLF → 干净
+
+    而**不能靠 here-string 的行尾** —— 它跟着 ``.ps1`` 自己的行尾走，仓库里这份
+    ``.ps1`` 是 LF（git 的 autocrlf 归一化过），从干净克隆构建出来必然又是 LF。
+    所以必须「行数组 + ``-join "`r`n"``」。
+    """
+    region = _cmd_entry_region()
+    assert "`r`n" in region, "生成的 .cmd 必须显式拼 CRLF 行尾"
+    assert "'@echo off'" in region, "应当用「行数组 + -join」生成 .cmd，别用 here-string"
+
+
+def test_generated_cmd_lines_are_pure_ascii() -> None:
+    """生成的 ``.cmd`` 每一行都必须是纯 ASCII。
+
+    批处理是**按字节**解析的：GBK 汉字的次字节可能正好落在 cmd 的特殊字符上
+    （``|`` 0x7C、``&`` 0x26、``<`` 0x3C、``>`` 0x3E、``^`` 0x5E），那时行会被
+    从中间切开 —— 而且这跟控制台码页无关。这一次的中文注释恰好没踩上
+    （改成 CRLF 就干净了），但那是运气；注释写成 ASCII 就没有这个运气成分。
+
+    剥掉注释再查：中文说明**故意**放在 ``#`` 注释里，那里不会进 .cmd。
+    """
+    region = _cmd_entry_region()
+    offenders = sorted({ch for ch in region if not ch.isascii()})
+    assert not offenders, f".cmd 的生成代码里出现非 ASCII 字符：{offenders}"
+
+
+def test_acceptance_script_imports_only_stdlib() -> None:
+    """``scripts/accept_windows_x64.py`` 只能用标准库。
+
+    它要在**用户自己的** Python 上跑（不是内嵌 runtime、也不是本仓库的 venv）——
+    一旦引入第三方依赖，想验包就得先装东西，验收门槛比用包还高。
+    用 ``ast`` 取真实 import，别在源码里搜字符串（注释里的包名会骗过文本断言）。
+    """
+    allowed = set(sys.stdlib_module_names)
+    tree = ast.parse(ACCEPT_SCRIPT.read_text(encoding="utf-8"))
+    bad: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] not in allowed:
+                    bad.add(alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:  # 相对导入
+                continue
+            root = (node.module or "").split(".")[0]
+            if root and root not in allowed:
+                bad.add(node.module or "")
+    assert bad == set(), f"验收脚本引入了第三方依赖：{sorted(bad)}"
+
+
+def test_acceptance_script_checks_the_cmd_line_endings() -> None:
+    """验收脚本必须真的查 ``.cmd`` 的行尾与字符集。
+
+    这正是它抓到的那个缺陷（LF 行尾 → cmd.exe 把注释当命令执行）。
+    断言用源码里的真实特征，而不是随便搜个词：既要数裸 LF，也要数非 ASCII 字节。
+    """
+    source = ACCEPT_SCRIPT.read_text(encoding="utf-8")
+    assert "bare_lf" in source and "non_ascii" in source, "验收脚本没查 .cmd 的行尾/字符集"
+    assert "不是内部或外部命令" in source, "验收脚本没断言 cmd.exe 的解析噪音"
+
+
+def test_build_script_verifies_the_generated_cmd_at_build_time() -> None:
+    """构建脚本自己也要体检它生成的 ``.cmd``（错了当场失败，别等用户双击）。
+
+    验收脚本是**手动**跑的，而这个缺陷是构建脚本自己引入的 —— 所以第 7 步必须
+    当场查一遍行尾与字符集。
+    """
+    smoke = _smoke_test_body()
+    assert "bareLf" in smoke and "nonAscii" in smoke, "冒烟测试没查 .cmd 的行尾/字符集"
+    assert "体检通过" in smoke, "冒烟测试应当把 .cmd 的体检结果打出来"
 
 
 def test_build_script_smoke_test_looks_like_a_user_machine() -> None:

@@ -23,7 +23,7 @@ back a structured Obsidian note with **13 fixed sections**: summary, key points 
 "unverified" section, and `[[wikilinks]]` to entities and topics.
 
 > **TL;DR** — Two-track architecture (a core pipeline that runs fully offline plus a
-> degradation-tolerant ingestion layer), 1593 tests, 97% line coverage, a FastAPI
+> degradation-tolerant ingestion layer), 1598 tests, 97% line coverage, a FastAPI
 > backend, a zero-build web UI, a Chrome extension, and **one-click installers for macOS
 > Apple Silicon and Windows 10+ x64**. **Personal / research use only.**
 
@@ -185,6 +185,23 @@ $env:KF_PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
 > Chinese comments in this script then swallow the quotes that follow them — you get a pile
 > of nonsensical syntax errors that never mention encoding. The reasoning and the full
 > trail of what went wrong are in the script's own header comment.
+
+After building, run the **portable-package acceptance** too — it unzips the ZIP into a clean
+directory and really starts the backend under simulated clean-machine conditions:
+
+```powershell
+python scripts\accept_windows_x64.py           # accept the newest ZIP in dist
+python scripts\accept_windows_x64.py --keep    # keep the unpacked dir for debugging
+```
+
+This is not duplicated effort: the end-to-end tests use the **development layout**
+(`KF_DEV_RUNTIME` pointing at the current venv) and never exercise the real user path —
+"the portable package finds its own install root and starts the backend from the bundled
+runtime". The very first run of this script caught a real defect (the generated `.cmd` had
+LF line endings, so cmd.exe executed the `rem` comments as commands) that 82 packaging tests
+plus the build script's own smoke test all missed, because it only shows up in the
+**unpacked package**. Standard library only, so any Python on the user's machine can run it,
+and it never touches the network.
 
 Design and audit notes (why it's packaged this way, and every trap hit along the way):
 [`docs/v0.4-windows-packaging.md`](docs/v0.4-windows-packaging.md).
@@ -350,8 +367,8 @@ The minimum you need:
 cd backend && ../.venv/bin/python -m pytest
 ```
 
-Expected: **all green**. The repo currently holds **1593** tests (measured on Windows x64:
-1572 passed / 22 skipped), and a batch is skipped by design:
+Expected: **all green**. The repo currently holds **1598** tests (measured on Windows x64:
+1577 passed / 22 skipped), and a batch is skipped by design:
 
 - **4** real ASR / OCR tests (need the engines, plus a model download on first run)
 - **real-browser end-to-end tests** (need Playwright + Chrome)
@@ -363,13 +380,13 @@ Expected: **all green**. The repo currently holds **1593** tests (measured on Wi
   checks that need `node`
 
 So **the skip count varies with platform and with which optional dependencies are
-installed** — do not compare it against a fixed number; the `1572 / 22` above is just
+installed** — do not compare it against a fixed number; the `1577 / 22` above is just
 one measurement on Windows x64.
 
-> A note on the arithmetic: `1572 + 22 = 1594`, one more than 1593. That is not a typo —
+> A note on the arithmetic: `1577 + 22 = 1599`, one more than 1598. That is not a typo —
 > without playwright, `test_web_ui_browser.py` is skipped **at module level during
 > collection**, and pytest records that as its own skip entry, which is not part of the
-> 1593 collected items.
+> 1598 collected items.
 
 To run the real engines / browser:
 
@@ -491,7 +508,7 @@ backend/
     db/            SQLAlchemy async (SQLite)
     web/           zero-build static UI
   scripts/         acceptance scripts + three quality guards
-  tests/           1593 tests, fully offline
+  tests/           1598 tests, fully offline
 packaging/macos/   macOS launcher + Info.plist + app requirements
 packaging/windows/ Windows launcher (kf_app) + PyInstaller entry + app requirements
 extension/         Chrome MV3 extension
@@ -524,7 +541,7 @@ These were all learned the hard way. They live in code comments; here they are i
 
 | Metric | Value |
 |---|---|
-| Tests | **1593** tests, all green by default (skips vary by platform and optional deps — see "Run the tests") |
+| Tests | **1598** tests, all green by default (skips vary by platform and optional deps — see "Run the tests") |
 | Line coverage | **97.0%** (`scripts/check_coverage.py` enforces a 90% floor) |
 | Network needed to run tests | **none** — all via `httpx.MockTransport` / mock LLM |
 | Verified against the real world | Douyin ingestion, DeepSeek analysis, ASR, OCR, browser E2E all really run |

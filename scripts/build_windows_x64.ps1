@@ -557,15 +557,34 @@ Write-Ok "$AppName.exe（$([math]::Round((Get-Item $BuiltExe).Length / 1MB, 1)) 
 # 命令行入口。无控制台的 exe 里 print() 没有出口，--status/--stop/--check
 # 本来就是给人看输出的，所以单独给一份走内嵌解释器的 .cmd。
 # **必须用 %~dp0 而不是 %CD%**：用户可能从任意工作目录调用它。
+#
+# 这份 .cmd 有两条硬约束，都是实测出来的（原来两条都踩了）：
+#
+# 1. **行尾必须是 CRLF，而且要显式拼。**
+#    cmd.exe **不认 LF-only 的批处理**：它会把注释行按错误的边界切开，把 rem
+#    后面的片段当命令去执行。实测（同一份内容，只换行尾）：
+#        LF   → 用户看到三行「'-status' 不是内部或外部命令」这类噪音
+#        CRLF → 干净
+#    而**不能靠 here-string 的行尾** —— 它跟着 .ps1 自己的行尾走，仓库里这份
+#    .ps1 是 LF（git 的 autocrlf 归一化过），从干净克隆构建出来必然又是 LF。
+#    所以这里用「行数组 + -join "`r`n"」显式指定。
+#
+# 2. **每一行都必须是纯 ASCII。**
+#    批处理是**按字节**解析的：GBK 汉字的次字节可能正好落在 cmd 的特殊字符上
+#    （`|` 0x7C、`&` 0x26、`<` 0x3C、`>` 0x3E、`^` 0x5E），那时行会被从中间
+#    切开，跟控制台码页无关。这次的中文注释恰好没踩上（改成 CRLF 就干净了），
+#    但那是运气。注释写成英文，就没有这个运气成分。
+#    （说明放在这里而不是 .cmd 里 —— 排障看的是构建脚本，不是那份生成的批处理。）
 $CmdPath = Join-Path $Stage "$AppName.cmd"
-@"
-@echo off
-rem KnowledgeFlow 命令行入口（--status / --stop / --check / --setup）
-rem 走内嵌解释器，所以输出能正常显示；双击入口请用 $AppName.exe。
-setlocal
-"%~dp0runtime\python.exe" "%~dp0launcher\run.py" %*
-exit /b %ERRORLEVEL%
-"@ | Set-Content -Encoding OEM $CmdPath
+$CmdLines = @(
+    '@echo off',
+    "rem $AppName command-line entry (--status / --stop / --check / --setup)",
+    "rem Runs via the bundled interpreter; to launch by double-click use $AppName.exe.",
+    'setlocal',
+    '"%~dp0runtime\python.exe" "%~dp0launcher\run.py" %*',
+    'exit /b %ERRORLEVEL%'
+)
+Set-Content -Path $CmdPath -Encoding OEM -NoNewline -Value (($CmdLines -join "`r`n") + "`r`n")
 
 # --------------------------------------------------------------------------- #
 Write-Step '7/8 冒烟测试（用打包好的产物真的跑一次）'
@@ -643,6 +662,23 @@ try {
     if ($cmdCode -ne 0) { Die ".cmd 自检失败（退出码 $cmdCode）`n$cmdOut" }
     if ($cmdOut -notmatch '内置运行环境') { Die ".cmd 自检输出异常：`n$cmdOut" }
     Write-Ok '.cmd 自检通过'
+
+    # ④ .cmd 自身的体检。它是**本脚本生成**的，所以错了就该当场失败 ——
+    #    别等用户双击时看到几行「'xxx' 不是内部或外部命令」。
+    #    按 latin1（逐字节）读：用 UTF-8 读会把多字节字符变成替换字符，查不出原样。
+    $cmdFile = Join-Path $Stage "$AppName.cmd"
+    $cmdRaw = [System.IO.File]::ReadAllText($cmdFile, [System.Text.Encoding]::GetEncoding(28591))
+    $bareLf = ([regex]::Matches($cmdRaw, "(?<!`r)`n")).Count
+    $crlf = ([regex]::Matches($cmdRaw, "`r`n")).Count
+    $nonAscii = ([regex]::Matches($cmdRaw, "[^\x00-\x7F]")).Count
+    if ($crlf -eq 0) { Die "$AppName.cmd 里一个 CRLF 都没有 —— 行尾不对" }
+    if ($bareLf -ne 0) {
+        Die "$AppName.cmd 有 $bareLf 个裸 LF 行尾 —— cmd.exe 不认 LF-only 批处理，会把注释当命令执行"
+    }
+    if ($nonAscii -ne 0) {
+        Die "$AppName.cmd 有 $nonAscii 个非 ASCII 字节 —— 多字节字符的次字节可能落在 cmd 的特殊字符上"
+    }
+    Write-Ok "$AppName.cmd 体检通过（$crlf 个 CRLF、纯 ASCII）"
 } finally {
     $env:LOCALAPPDATA = $SavedLocalAppData
     # **只在原来真的有值时才写回**：`$env:X = $null` 的语义在不同 PowerShell 版本上

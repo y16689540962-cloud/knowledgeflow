@@ -32,7 +32,7 @@ Obsidian 笔记：摘要 / 核心观点（分事实·观点·推论·预测）/ 
 > topics. Every claim carries a quote; anything without textual support is filed
 > separately instead of being blended into the summary. Two-track architecture
 > (a core pipeline that runs fully offline + a degradation-tolerant ingestion layer),
-> 1593 tests, 97% line coverage, a FastAPI backend, a zero-build web UI, and a Chrome
+> 1598 tests, 97% line coverage, a FastAPI backend, a zero-build web UI, and a Chrome
 > extension. **One-click installers for macOS Apple Silicon and Windows 10+ x64** included.
 > Docs are in Chinese; code, tests and comments read either way. **Personal / research use only.**
 
@@ -185,6 +185,20 @@ $env:KF_PIP_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
 > ANSI 码页解（中文机器上是 GBK），脚本里的中文注释会把后面的引号「吃掉」，
 > 报出来的是一堆莫名其妙的语法错误。原因和踩坑记录都写在脚本头部注释里。
 
+构建完建议再跑一遍**便携包验收** —— 它把 ZIP 解压到干净目录、在模拟「干净机器」的
+条件下真起一次后端：
+
+```powershell
+python scripts\accept_windows_x64.py           # 验收 dist 下最新的 ZIP
+python scripts\accept_windows_x64.py --keep    # 保留解压目录，便于排查
+```
+
+它不是重复劳动：单元测试里的端到端用例走的是**开发布局**（`KF_DEV_RUNTIME` 指向当前
+venv），从没验过「便携包靠自己的标记找到安装目录 + 用内置 runtime 起后端」这条真实
+用户路径。这个脚本第一次跑就抓到一个真缺陷（生成的 `.cmd` 是 LF 行尾，cmd.exe 把
+`rem` 注释当命令执行）—— 82 条打包测试加构建脚本自己的冒烟测试全都没发现，
+因为它只在**解压出来的包**上才暴露。只用标准库，用户自己的 Python 就能跑，全程离线。
+
 设计与审计（为什么这么打包、踩过哪些坑）：[`docs/v0.4-windows-packaging.md`](docs/v0.4-windows-packaging.md)。
 
 ---
@@ -334,7 +348,7 @@ $EDITOR backend/.env
 cd backend && ../.venv/bin/python -m pytest
 ```
 
-期望：**全绿**。本仓库当前共 **1593** 项用例（Windows x64 上实测 1572 passed / 22 skipped），
+期望：**全绿**。本仓库当前共 **1598** 项用例（Windows x64 上实测 1577 passed / 22 skipped），
 默认会跳过一批，都是设计如此：
 
 - **4 条**真实 ASR / OCR（需要装引擎，首次还要联网下模型）
@@ -346,11 +360,11 @@ cd backend && ../.venv/bin/python -m pytest
   以及要 `node` 才能做的 JS 语法 / 行为校验
 
 所以**跳过的条数随平台和已装的可选依赖而变**，别拿一个固定数字去对 ——
-上面那个 `1572 / 22` 只是 Windows x64 上的一次实测。
+上面那个 `1577 / 22` 只是 Windows x64 上的一次实测。
 
-> 小注：`1572 + 22 = 1594` 比 1593 多 1。不是数错了 —— 没装 playwright 时
+> 小注：`1577 + 22 = 1599` 比 1598 多 1。不是数错了 —— 没装 playwright 时
 > `test_web_ui_browser.py` 在**收集期整模块跳过**，pytest 会为它单独记一条 skip，
-> 而它不在「收集到的 1593 项」里。
+> 而它不在「收集到的 1598 项」里。
 
 想跑真实引擎 / 浏览器：
 
@@ -466,7 +480,7 @@ backend/
     db/            SQLAlchemy async（SQLite）
     web/           零构建静态界面
   scripts/         一致的验收脚本 + 三个质量守卫
-  tests/           1593 项，全程离线
+  tests/           1598 项，全程离线
 packaging/macos/   macOS 启动器 + Info.plist + 应用依赖
 packaging/windows/ Windows 启动器（kf_app）+ PyInstaller 入口 + 应用依赖
 extension/         Chrome MV3 扩展
@@ -492,7 +506,7 @@ extension/         Chrome MV3 扩展
 
 | 指标 | 数值 |
 |---|---|
-| 用例 | **1593** 项，默认全绿（跳过的按平台与已装可选依赖而变，见「跑测试」） |
+| 用例 | **1598** 项，默认全绿（跳过的按平台与已装可选依赖而变，见「跑测试」） |
 | 行覆盖率 | **97.0%**（`scripts/check_coverage.py` 有 90% 下限守卫） |
 | 运行网络依赖 | **零** —— 全部用 `httpx.MockTransport` / Mock LLM |
 | 真实联网验证 | 抖音采集、DeepSeek 分析、ASR、OCR、浏览器端到端都真跑过 |
