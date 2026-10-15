@@ -594,7 +594,7 @@ The tests are written to **have teeth**, not to pad a count:
 
 ## Acknowledgements
 
-Code, tests and docs by [y16689540962-cloud](https://github.com/y16689540962-cloud).
+Code, tests and docs by [@y16689540962-cloud](https://github.com/y16689540962-cloud).
 
 Inference service and dependencies (**not code contributors**, but the project runs on
 them): **DeepSeek** (LLM inference), FastAPI / Pydantic / SQLAlchemy,

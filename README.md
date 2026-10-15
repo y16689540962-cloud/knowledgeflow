@@ -546,7 +546,7 @@ extension/         Chrome MV3 扩展
 
 ## 致谢
 
-代码、测试与文档：[y16689540962-cloud](https://github.com/y16689540962-cloud)。
+代码、测试与文档：[@y16689540962-cloud](https://github.com/y16689540962-cloud)。
 
 推理服务与依赖库（**不是代码贡献者**，但项目离不开它们）：**DeepSeek**（LLM 推理）、
 FastAPI / Pydantic / SQLAlchemy、faster-whisper / PyAV、Tesseract、python-build-standalone 等。
