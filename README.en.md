@@ -23,7 +23,7 @@ back a structured Obsidian note with **13 fixed sections**: summary, key points 
 "unverified" section, and `[[wikilinks]]` to entities and topics.
 
 > **TL;DR** — Two-track architecture (a core pipeline that runs fully offline plus a
-> degradation-tolerant ingestion layer), 1598 tests, 97% line coverage, a FastAPI
+> degradation-tolerant ingestion layer), 1605 tests, 97% line coverage, a FastAPI
 > backend, a zero-build web UI, a Chrome extension, and **one-click installers for macOS
 > Apple Silicon and Windows 10+ x64**. **Built for learning and research use;
 > MIT-licensed. See the [disclaimer](#-disclaimer-read-this-first) below.**
@@ -386,8 +386,8 @@ The minimum you need:
 cd backend && ../.venv/bin/python -m pytest
 ```
 
-Expected: **all green**. The repo currently holds **1598** tests (measured on Windows x64:
-1577 passed / 22 skipped), and a batch is skipped by design:
+Expected: **all green**. The repo currently holds **1605** tests (measured on macOS:
+1586 passed / 20 skipped), and a batch is skipped by design:
 
 - **4** real ASR / OCR tests (need the engines, plus a model download on first run)
 - **real-browser end-to-end tests** (need Playwright + Chrome)
@@ -399,13 +399,13 @@ Expected: **all green**. The repo currently holds **1598** tests (measured on Wi
   checks that need `node`
 
 So **the skip count varies with platform and with which optional dependencies are
-installed** — do not compare it against a fixed number; the `1577 / 22` above is just
-one measurement on Windows x64.
+installed** — do not compare it against a fixed number; the `1586 / 20` above is just
+one measurement on macOS.
 
-> A note on the arithmetic: `1577 + 22 = 1599`, one more than 1598. That is not a typo —
+> A note on the arithmetic: `1586 + 20 = 1606`, one more than 1605. That is not a typo —
 > without playwright, `test_web_ui_browser.py` is skipped **at module level during
 > collection**, and pytest records that as its own skip entry, which is not part of the
-> 1598 collected items.
+> 1605 collected items.
 
 To run the real engines / browser:
 
@@ -527,7 +527,7 @@ backend/
     db/            SQLAlchemy async (SQLite)
     web/           zero-build static UI
   scripts/         acceptance scripts + three quality guards
-  tests/           1598 tests, fully offline
+  tests/           1605 tests, fully offline
 packaging/macos/   macOS launcher + Info.plist + app requirements
 packaging/windows/ Windows launcher (kf_app) + PyInstaller entry + app requirements
 extension/         Chrome MV3 extension
@@ -560,7 +560,7 @@ These were all learned the hard way. They live in code comments; here they are i
 
 | Metric | Value |
 |---|---|
-| Tests | **1598** tests, all green by default (skips vary by platform and optional deps — see "Run the tests") |
+| Tests | **1605** tests, all green by default (skips vary by platform and optional deps — see "Run the tests") |
 | Line coverage | **97.0%** (`scripts/check_coverage.py` enforces a 90% floor) |
 | Network needed to run tests | **none** — all via `httpx.MockTransport` / mock LLM |
 | Verified against the real world | Douyin ingestion, DeepSeek analysis, ASR, OCR, browser E2E all really run |

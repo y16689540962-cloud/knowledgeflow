@@ -716,12 +716,6 @@ def test_end_to_end_start_serve_ui_and_stop_cleanly(
         f"端口 {port} 上已经有服务在跑了 —— 先清掉残留进程再跑测试"
     )
 
-    # 前置守卫：这个端口必须是干净的。否则启动器会「复用已有服务」直接退出，
-    # 于是下面的断言会以一个完全看不懂的方式失败（实测被上一轮测试的孤儿进程坑过）。
-    assert _http_status(f"{base}/api/health") is None, (
-        f"端口 {port} 上已经有服务在跑了 —— 先清掉残留进程再跑测试"
-    )
-
     repo_data_before = _snapshot_repo_data()
     proc = _spawn_launcher(env, "--port", str(port), "--no-browser")
     try:
