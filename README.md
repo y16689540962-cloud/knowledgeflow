@@ -32,7 +32,7 @@ Obsidian 笔记：摘要 / 核心观点（分事实·观点·推论·预测）/ 
 > topics. Every claim carries a quote; anything without textual support is filed
 > separately instead of being blended into the summary. Two-track architecture
 > (a core pipeline that runs fully offline + a degradation-tolerant ingestion layer),
-> 1605 tests, 97% line coverage, a FastAPI backend, a zero-build web UI, and a Chrome
+> 1606 tests, 97% line coverage, a FastAPI backend, a zero-build web UI, and a Chrome
 > extension. **One-click installers for macOS Apple Silicon and Windows 10+ x64** included.
 > Docs are in Chinese; code, tests and comments read either way. **Built for learning
 > and research use; MIT-licensed. See the [disclaimer](#-免责声明先读这段) below.**
@@ -363,7 +363,7 @@ $EDITOR backend/.env
 cd backend && ../.venv/bin/python -m pytest
 ```
 
-期望：**全绿**。本仓库当前共 **1605** 项用例（macOS 实测 1586 passed / 20 skipped），
+期望：**全绿**。本仓库当前共 **1606** 项用例（macOS 实测 1587 passed / 20 skipped），
 默认会跳过一批，都是设计如此：
 
 - **4 条**真实 ASR / OCR（需要装引擎，首次还要联网下模型）
@@ -375,11 +375,11 @@ cd backend && ../.venv/bin/python -m pytest
   以及要 `node` 才能做的 JS 语法 / 行为校验
 
 所以**跳过的条数随平台和已装的可选依赖而变**，别拿一个固定数字去对 ——
-上面那个 `1586 / 20` 只是 macOS 上的一次实测。
+上面那个 `1587 / 20` 只是 macOS 上的一次实测。
 
-> 小注：`1586 + 20 = 1606` 比 1605 多 1。不是数错了 —— 没装 playwright 时
+> 小注：`1587 + 20 = 1607` 比 1606 多 1。不是数错了 —— 没装 playwright 时
 > `test_web_ui_browser.py` 在**收集期整模块跳过**，pytest 会为它单独记一条 skip，
-> 而它不在「收集到的 1605 项」里。
+> 而它不在「收集到的 1606 项」里。
 
 想跑真实引擎 / 浏览器：
 
@@ -495,7 +495,7 @@ backend/
     db/            SQLAlchemy async（SQLite）
     web/           零构建静态界面
   scripts/         一致的验收脚本 + 三个质量守卫
-  tests/           1605 项，全程离线
+  tests/           1606 项，全程离线
 packaging/macos/   macOS 启动器 + Info.plist + 应用依赖
 packaging/windows/ Windows 启动器（kf_app）+ PyInstaller 入口 + 应用依赖
 extension/         Chrome MV3 扩展
@@ -521,7 +521,7 @@ extension/         Chrome MV3 扩展
 
 | 指标 | 数值 |
 |---|---|
-| 用例 | **1605** 项，默认全绿（跳过的按平台与已装可选依赖而变，见「跑测试」） |
+| 用例 | **1606** 项，默认全绿（跳过的按平台与已装可选依赖而变，见「跑测试」） |
 | 行覆盖率 | **97.0%**（`scripts/check_coverage.py` 有 90% 下限守卫） |
 | 运行网络依赖 | **零** —— 全部用 `httpx.MockTransport` / Mock LLM |
 | 真实联网验证 | 抖音采集、DeepSeek 分析、ASR、OCR、浏览器端到端都真跑过 |

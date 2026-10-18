@@ -605,12 +605,40 @@ def tracked_files() -> list[str] | None:
     return [name for name in raw.split("\0") if name]
 
 
-def is_noise(path: Path) -> bool:
-    parts = set(path.parts)
-    return bool(parts & {".git", "node_modules", "__pycache__", ".venv", "dist", "build"}) or path.suffix in {
-        ".pyc",
-        ".pyo",
+#: 扫描「仓库里有没有内部文档」时要跳过的目录。
+#:
+#: 这里必须包含 pytest / ruff 的缓存目录：``pyproject.toml`` 把 pytest 的 basetemp
+#: 固定在 ``backend/.pytest_tmp``（在仓库工作区里面），而 **``test_compliance_guard.py``
+#: 会往临时目录里故意放一份「内部文档」做负向测试** —— 如果扫描不跳过它，
+#: 测试跑完再跑守卫就会报出自己刚造的违规（CI 上实测踩到）。
+NOISE_DIRS = frozenset(
+    {
+        ".git",
+        "node_modules",
+        "__pycache__",
+        ".venv",
+        "dist",
+        "build",
+        "data",
+        ".pytest_cache",
+        ".pytest_tmp",
+        ".ruff_cache",
     }
+)
+
+
+def is_noise(path: Path) -> bool:
+    """是否在缓存/构建/测试临时目录里 —— 判据是**相对仓库根**的路径。
+
+    不能直接拿绝对路径的 parts 判：``--repo-root`` 指向的临时目录本身可能就在
+    ``.pytest_tmp`` 下面（pytest 的 basetemp），那样整个临时仓库都会被当成噪音、
+    负向测试反而永远绿。
+    """
+    try:
+        relative = path.relative_to(REPO_ROOT)
+    except ValueError:  # 仓库外的路径（例如被测代码根在仓库外）
+        relative = path
+    return bool(set(relative.parts) & NOISE_DIRS) or path.suffix in {".pyc", ".pyo"}
 
 
 #: 会被扫描「有没有引用内部文档名」的源码后缀。
@@ -619,9 +647,7 @@ SCANNABLE_SUFFIXES = frozenset(
 )
 
 #: 扫描「内部文档名作为引用出现」时**不要**进的目录。
-SCAN_SKIP_DIRS = frozenset(
-    {".git", "node_modules", "__pycache__", ".venv", "dist", "build", "data", ".pytest_cache"}
-)
+SCAN_SKIP_DIRS = NOISE_DIRS
 
 
 def scan_roots() -> tuple[Path, ...]:

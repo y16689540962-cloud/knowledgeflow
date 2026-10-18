@@ -146,3 +146,21 @@ def test_guard_rejects_each_mutation(
         f"{description}：守卫报红的位置不对。\n"
         f"期望以 {expected_section!r} 开头的 section，实际 sections={guard.sections}"
     )
+
+
+def test_guard_ignores_internal_doc_inside_pytest_tmp(tmp_path: Path) -> None:
+    """pytest 的 basetemp 在仓库工作区里（``backend/.pytest_tmp``）。
+
+    这个测试文件自己做负向变异时会把「内部文档」放进临时目录；如果守卫把
+    ``.pytest_tmp`` 也当工作区扫，测试跑完再跑守卫就会报出**自己刚造的违规**。
+    CI 上实测踩到过：``pytest`` 先跑完、``Compliance guard`` 再跑，于是守卫红了。
+    """
+    root = _make_repo_copy(tmp_path)
+    noise = root / ".pytest_tmp" / "test_guard_rejects_each_mutati5" / "repo"
+    noise.mkdir(parents=True)
+    (noise / INTERNAL_DOC_NAME).write_text("守卫测试夹具，不是真的内部文档", encoding="utf-8")
+    (noise / "injected.py").write_text(f'doc = "{INTERNAL_DOC_NAME}"\n', encoding="utf-8")
+
+    guard = _run_file_checks(root)
+
+    assert not guard.problems, f"守卫把 pytest 临时目录当成工作区了：{guard.problems}"
