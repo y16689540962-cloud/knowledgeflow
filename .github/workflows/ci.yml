@@ -48,7 +48,7 @@ jobs:
       - name: Run tests
         run: python -m pytest
 
-      # 这两道守卫的结论与 Python 版本无关，跑一遍就够；跑两遍只是让 CI 慢一倍。
+      # 这几道守卫的结论与 Python 版本无关，跑一遍就够；跑两遍只是让 CI 慢一倍。
       # 放在 3.13 这条腿上，是因为它才是实际交付用的解释器。
       - name: Doc consistency guard
         if: matrix.python-version == '3.13'
@@ -57,3 +57,10 @@ jobs:
       - name: Coverage guard (>= 90%)
         if: matrix.python-version == '3.13'
         run: python scripts/check_coverage.py
+
+      # 合规边界守卫：README/COMPLIANCE.md 里声明的边界（不伪造签名、不绕过验证码、
+      # Cookie 不外泄、CORS 不放行通配、扩展权限最小化）一旦被代码改动破坏，
+      # 这里是唯一会红的地方 —— 这些承诺坏了不会让任何功能测试失败。
+      - name: Compliance guard
+        if: matrix.python-version == '3.13'
+        run: python scripts/check_compliance_guard.py

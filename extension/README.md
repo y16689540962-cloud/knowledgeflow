@@ -68,4 +68,28 @@ Chrome 每次启动会提示「请停用开发者模式运行的扩展」—— 
 
 > **商标说明**：图标是紫水晶切面，**意象上致敬 [Obsidian](https://obsidian.md)，不是它的官方 logo**，
 > 本项目与 Obsidian.md 及字节跳动均无关联。改配色 / 形状请改 `icons/icon.svg` 后重新渲染。
+> **若要公开分发（如上架 Chrome 应用商店）或商用，请先更换图标**，避免商标混淆。
+
+---
+
+## Compliance (English summary)
+
+The extension is the entry point where Douyin ingestion actually happens, so the boundary
+is restated here in English:
+
+- **What this extension does:** it reads the current tab's URL and hands it to your local
+  backend. It does not scrape page content, does not inject scripts, and requests only
+  `activeTab` + `storage`. Its only network permission is `http://127.0.0.1:8000/*`.
+- **What the backend does:** short-link resolution → `aweme_id` → Douyin detail API →
+  LLM analysis → Obsidian note, using **only your own account's session** if you configure
+  one. It issues GETs against public data, and **does not forge signatures, break
+  encryption, or bypass CAPTCHAs**. When blocked, it reports the error and stops.
+- **Your responsibility:** having your own session does not change the platform rules that
+  apply to automated collection. Review the
+  [Douyin Terms of Service](https://www.douyin.com/agreements/?id=6773901168964798477)
+  before use, and check whether automated access is permitted for your situation.
+- **Trademark:** the icon is a faceted amethyst — an homage to Obsidian's look, **not its
+  official logo**. Replace it before any public distribution or commercial use.
+- **License:** MIT. See the [main README](../README.md) for the full disclaimer, and
+  [COMPLIANCE.md](../COMPLIANCE.md) for the full data and compliance notes.
 

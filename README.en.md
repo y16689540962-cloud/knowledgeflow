@@ -25,7 +25,8 @@ back a structured Obsidian note with **13 fixed sections**: summary, key points 
 > **TL;DR** — Two-track architecture (a core pipeline that runs fully offline plus a
 > degradation-tolerant ingestion layer), 1598 tests, 97% line coverage, a FastAPI
 > backend, a zero-build web UI, a Chrome extension, and **one-click installers for macOS
-> Apple Silicon and Windows 10+ x64**. **Personal / research use only.**
+> Apple Silicon and Windows 10+ x64**. **Built for learning and research use;
+> MIT-licensed. See the [disclaimer](#-disclaimer-read-this-first) below.**
 
 ---
 
@@ -238,15 +239,33 @@ ffmpeg installed**.
 
 ## ⚠️ Disclaimer (read this first)
 
-- This project is **for learning and research only**, not for commercial use. It is
-  **not affiliated with Douyin (ByteDance) or Obsidian**.
+- This project is **built for learning and research**. It is **not affiliated with
+  Douyin (ByteDance) or Obsidian** — it receives no sponsorship, authorization, or
+  endorsement from either.
 - Douyin ingestion uses **only your own account's session**, only issues GETs against
   public data, and **does not forge signatures, break encryption, or bypass CAPTCHAs**.
   When the platform blocks it, it reports the error honestly and makes no attempt to work
   around it. That boundary is pinned by tests.
-- Scraping may be subject to platform terms of service. **Use at your own risk.**
+- **Using your own session does not change the platform rules that apply to the act of
+  scraping** — a legitimate identity and a compliant method are two separate things.
+  Before using Douyin ingestion, read and follow the
+  [Douyin Terms of Service](https://www.douyin.com/agreements/?id=6773901168964798477)
+  and the platform's robots conventions.
+- **You are responsible for how your own account is used**, including but not limited to
+  request frequency, and the use and redistribution of whatever you collect. This project
+  does not judge whether your particular use case is compliant.
 - The extension icon is a faceted amethyst — an **homage to Obsidian's look, not its
-  official logo**.
+  official logo**. **If you intend to distribute it publicly (e.g. publish to the Chrome
+  Web Store) or use it commercially, replace the icon first** to avoid trademark confusion.
+
+### On licensing
+
+This project is released under **MIT** (see [LICENSE](LICENSE)) — you may freely use,
+modify, and distribute it, including commercially. The points above describe **what we
+do not do** (we do not bypass platform protections, and we do not endorse your use case);
+they **do not** add restrictions on what you may do with the software. The real
+constraints come from platform terms of service and the law where you operate.
+Full data and compliance notes: [COMPLIANCE.md](COMPLIANCE.md).
 
 ---
 
@@ -591,6 +610,9 @@ The tests are written to **have teeth**, not to pad a count:
 - Backend CORS **only allows `chrome-extension://`** origins, never arbitrary web pages
   (otherwise any page on your machine could call the ingestion API).
 - The Douyin cookie is never echoed and never logged (pinned by tests).
+
+The full data and compliance notes (what is stored, where it goes, how to revoke it) are in
+[COMPLIANCE.md](COMPLIANCE.md).
 
 ## Acknowledgements
 

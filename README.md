@@ -34,7 +34,8 @@ Obsidian 笔记：摘要 / 核心观点（分事实·观点·推论·预测）/ 
 > (a core pipeline that runs fully offline + a degradation-tolerant ingestion layer),
 > 1598 tests, 97% line coverage, a FastAPI backend, a zero-build web UI, and a Chrome
 > extension. **One-click installers for macOS Apple Silicon and Windows 10+ x64** included.
-> Docs are in Chinese; code, tests and comments read either way. **Personal / research use only.**
+> Docs are in Chinese; code, tests and comments read either way. **Built for learning
+> and research use; MIT-licensed. See the [disclaimer](#-免责声明先读这段) below.**
 
 ---
 
@@ -232,11 +233,25 @@ venv），从没验过「便携包靠自己的标记找到安装目录 + 用内�
 
 ## ⚠️ 免责声明（先读这段）
 
-- 本项目**仅供学习与研究**，不用于商业用途，**与抖音（字节跳动）及 Obsidian 官方均无关联**。
+- 本项目**为学习与研究而做**，**与抖音（字节跳动）及 Obsidian 官方均无关联** ——
+  没有得到任何一方的赞助、授权或背书。
 - 抖音采集**只用你自己账号的登录态**，只对公开数据做 GET，**不伪造签名、不破解加密、
   不绕过验证码**；被平台挡住时如实报错，不做任何绕过尝试。这条边界在代码里有测试钉死。
-- 采集行为可能受平台服务条款约束，**使用者自负责任**。
-- 扩展图标是紫水晶切面，**意象上致敬 Obsidian，不是它的官方 logo**。
+- **使用你自己的登录态，不改变采集方式本身要遵守的平台规则** ——
+  "身份合法"与"方式合规"是两件事。请在使用抖音采集前自行阅读并遵守
+  [抖音用户服务协议](https://www.douyin.com/agreements/?id=6773901168964798477)
+  与平台的 robots 约定。
+- **你需要为自己账号的使用方式负责**，包括但不限于采集频率、采集内容的使用与传播；
+  本项目不代为判断你的具体使用场景是否合规。
+- 扩展图标是紫水晶切面，**意象上致敬 Obsidian，不是它的官方 logo**；
+  **若要公开分发（如上架 Chrome 应用商店）或商用，请先更换图标**，避免商标混淆。
+
+### 关于许可
+
+本项目以 **MIT** 发布（见 [LICENSE](LICENSE)）—— 你可以自由使用、修改、分发，
+包括商业用途。上面限制的是**我们不做的事**（不绕过平台防护、不背书你的使用方式），
+**不是**对你的使用场景追加额外限制。真正的约束来自平台的服务条款与你所在地区的法律。
+完整的数据与合规说明见 [COMPLIANCE.md](COMPLIANCE.md)。
 
 ---
 
@@ -543,6 +558,8 @@ extension/         Chrome MV3 扩展
 - 后端 CORS **只放行 `chrome-extension://`** 来源，不放行任意网页
   （否则本机随便一个页面都能调采集接口）。
 - 抖音 Cookie 不回显、不进日志（有测试钉死）。
+
+完整的数据去向与合规说明（存了什么、发给谁、怎么撤回）见 [COMPLIANCE.md](COMPLIANCE.md)。
 
 ## 致谢
 
